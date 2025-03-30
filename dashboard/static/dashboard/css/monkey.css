@@ -1,0 +1,154 @@
+.monkey-laugh {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.monkey-face {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #8B4513;
+    border-radius: 50% 50% 45% 45%;
+    animation: monkeyLaugh 2s ease-in-out forwards;
+}
+
+.monkey-face::before,
+.monkey-face::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #000;
+    border-radius: 50%;
+    top: 60px;
+    animation: blink 0.3s ease-in-out infinite;
+}
+
+.monkey-face::before {
+    left: 40px;
+}
+
+.monkey-face::after {
+    right: 40px;
+}
+
+.monkey-mouth {
+    position: absolute;
+    width: 80px;
+    height: 40px;
+    background: #FF4500;
+    border-radius: 0 0 40px 40px;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: laugh 0.5s ease-in-out infinite;
+}
+
+.monkey-ears {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: #8B4513;
+    border-radius: 50%;
+    top: 20px;
+}
+
+.monkey-ears::before,
+.monkey-ears::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #8B4513;
+    border-radius: 50%;
+    animation: earWiggle 0.3s ease-in-out infinite;
+}
+
+.monkey-ears::before {
+    left: -80px;
+}
+
+.monkey-ears::after {
+    right: -80px;
+}
+
+@keyframes monkeyLaugh {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    40% {
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    60% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    80% {
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes laugh {
+    0%, 100% {
+        height: 40px;
+        border-radius: 0 0 40px 40px;
+    }
+    50% {
+        height: 60px;
+        border-radius: 0 0 60px 60px;
+    }
+}
+
+@keyframes blink {
+    0%, 100% {
+        height: 40px;
+    }
+    50% {
+        height: 2px;
+    }
+}
+
+@keyframes earWiggle {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(10deg);
+    }
+}
+
+.matrix-text {
+    position: absolute;
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    pointer-events: none;
+    animation: matrixFloat 1s ease-out forwards;
+}
+
+@keyframes matrixFloat {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+} 

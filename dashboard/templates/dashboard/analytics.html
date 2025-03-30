@@ -1,0 +1,221 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Аналитика{% endblock %}
+
+{% block page_title %}Аналитика{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Управление аналитикой</h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-play"></i> Запуск KPI Controller
+            </button>
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-edit"></i> KPI Редактор
+            </button>
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-chart-line"></i> Offer Rates Редактор
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Фильтры -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <form class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Период</label>
+                                    <select class="form-select">
+                                        <option>Последние 7 дней</option>
+                                        <option>Последние 30 дней</option>
+                                        <option>Последние 90 дней</option>
+                                        <option>Произвольный период</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Кампании</label>
+                                    <select class="form-select">
+                                        <option>Все кампании</option>
+                                        <option>Кампания 1</option>
+                                        <option>Кампания 2</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Метрики</label>
+                                    <select class="form-select">
+                                        <option>Все метрики</option>
+                                        <option>Показы</option>
+                                        <option>Клики</option>
+                                        <option>Конверсии</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100">Применить</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Основные метрики -->
+                <div class="col-md-3 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">ROI</h6>
+                            <h3 class="card-text">245%</h3>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" style="width: 75%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Средняя стоимость клика</h6>
+                            <h3 class="card-text">$0.45</h3>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Конверсия</h6>
+                            <h3 class="card-text">3.2%</h3>
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" style="width: 32%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Средний чек</h6>
+                            <h3 class="card-text">$25.00</h3>
+                            <div class="progress">
+                                <div class="progress-bar bg-primary" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Графики -->
+                <div class="col-md-8 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Динамика конверсий</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="conversionChart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Распределение трафика</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="trafficChart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Таблица с детальной аналитикой -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Детальная аналитика</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Кампания</th>
+                                            <th>Показы</th>
+                                            <th>Клики</th>
+                                            <th>CTR</th>
+                                            <th>Конверсии</th>
+                                            <th>Стоимость конверсии</th>
+                                            <th>ROI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Кампания 1</td>
+                                            <td>15,000</td>
+                                            <td>450</td>
+                                            <td>3.0%</td>
+                                            <td>35</td>
+                                            <td>$12.85</td>
+                                            <td>245%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Кампания 2</td>
+                                            <td>12,000</td>
+                                            <td>360</td>
+                                            <td>3.0%</td>
+                                            <td>28</td>
+                                            <td>$13.21</td>
+                                            <td>235%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Подключаем Chart.js для графиков -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // График динамики конверсий
+    const conversionCtx = document.getElementById('conversionChart').getContext('2d');
+    new Chart(conversionCtx, {
+        type: 'line',
+        data: {
+            labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+            datasets: [{
+                label: 'Конверсии',
+                data: [12, 19, 15, 25, 22, 30, 28],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        }
+    });
+
+    // График распределения трафика
+    const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+    new Chart(trafficCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Прямой', 'Органический', 'Реклама', 'Реферальный'],
+            datasets: [{
+                data: [30, 25, 35, 10],
+                backgroundColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 205, 86)',
+                    'rgb(75, 192, 192)'
+                ]
+            }]
+        }
+    });
+</script>
+{% endblock %} 

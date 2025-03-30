@@ -1,0 +1,135 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Детали прокси{% endblock %}
+
+{% block page_title %}Детали прокси{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Информация о прокси</h5>
+        <div>
+            <button class="btn btn-outline-danger me-2" disabled>
+                <i class="fas fa-trash"></i> Удалить прокси
+            </button>
+            <a href="{% url 'dashboard:proxy' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if proxy %}
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>ID</th>
+                            <td>{{ proxy.proxy_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>IP</th>
+                            <td>{{ proxy.ip }}</td>
+                        </tr>
+                        <tr>
+                            <th>Тип</th>
+                            <td>{{ proxy.type }}</td>
+                        </tr>
+                        <tr>
+                            <th>Логин</th>
+                            <td>{{ proxy.login|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Пароль</th>
+                            <td>{{ proxy.psw|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Порт SOCKS5</th>
+                            <td>{{ proxy.port_socks5 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Порт HTTPS</th>
+                            <td>{{ proxy.port_https }}</td>
+                        </tr>
+                        <tr>
+                            <th>Гео</th>
+                            <td>
+                                {% with country_code=proxy.geo|lower %}
+                                    {% if country_code == 'us' %}🇺🇸
+                                    {% elif country_code == 'gb' %}🇬🇧
+                                    {% elif country_code == 'de' %}🇩🇪
+                                    {% elif country_code == 'fr' %}🇫🇷
+                                    {% elif country_code == 'it' %}🇮🇹
+                                    {% elif country_code == 'es' %}🇪🇸
+                                    {% elif country_code == 'nl' %}🇳🇱
+                                    {% elif country_code == 'pl' %}🇵🇱
+                                    {% elif country_code == 'ru' %}🇷🇺
+                                    {% elif country_code == 'ua' %}🇺🇦
+                                    {% elif country_code == 'kz' %}🇰🇿
+                                    {% elif country_code == 'br' %}🇧🇷
+                                    {% elif country_code == 'ca' %}🇨🇦
+                                    {% elif country_code == 'au' %}🇦🇺
+                                    {% elif country_code == 'jp' %}🇯🇵
+                                    {% elif country_code == 'kr' %}🇰🇷
+                                    {% elif country_code == 'cn' %}🇨🇳
+                                    {% elif country_code == 'in' %}🇮🇳
+                                    {% elif country_code == 'sg' %}🇸🇬
+                                    {% elif country_code == 'ae' %}🇦🇪
+                                    {% endif %}
+                                    {{ proxy.geo|upper }}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Ссылка смены IP</th>
+                            <td>{{ proxy.link_change_ip|default:"-" }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Статус</th>
+                            <td>
+                                {% if proxy.status == 'work' %}
+                                    <span class="badge bg-success">Активный</span>
+                                {% elif proxy.status == 'new' %}
+                                    <span class="badge bg-warning">Новый</span>
+                                {% elif proxy.status == 'inactive' %}
+                                    <span class="badge bg-danger">Неактивный</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Неизвестно</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Стоимость</th>
+                            <td>{{ proxy.proxy_cost|floatformat:2 }} {{ proxy.proxy_cur }}</td>
+                        </tr>
+                        <tr>
+                            <th>Аккаунт</th>
+                            <td>{{ proxy.accs|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>FBT ID</th>
+                            <td>{{ proxy.fbt_id|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Для Octo</th>
+                            <td>{{ proxy.for_octo|yesno:"Да,Нет" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Octo UUID</th>
+                            <td>{{ proxy.octo_uuid|default:"-" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                Прокси не найден
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

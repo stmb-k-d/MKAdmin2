@@ -1,0 +1,66 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Дашборд{% endblock %}
+
+{% block page_title %}Главная страница{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card matrix-card">
+                <div class="card-header matrix-header">
+                    <h3 class="card-title matrix-title">
+                        <i class="fas fa-tachometer-alt me-2"></i>Панель управления
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="card matrix-card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-server fa-3x mb-3 matrix-icon"></i>
+                                    <h4>Прокси</h4>
+                                    <p class="matrix-text">Управление прокси-серверами</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card matrix-card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-3x mb-3 matrix-icon"></i>
+                                    <h4>Аккаунты</h4>
+                                    <p class="matrix-text">Управление аккаунтами</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card matrix-card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-3x mb-3 matrix-icon"></i>
+                                    <h4>Рекламные кампании</h4>
+                                    <p class="matrix-text">Управление рекламными кампаниями</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.matrix-icon {
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
+}
+
+.matrix-text {
+    color: var(--matrix-text);
+    text-shadow: 0 0 5px var(--matrix-green);
+}
+</style>
+{% endblock %} 

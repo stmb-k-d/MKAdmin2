@@ -1,0 +1,147 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Аккаунты{% endblock %}
+
+{% block page_title %}Управление аккаунтами{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Список аккаунтов</h5>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-plus"></i> Добавить аккаунт
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="showActive" checked>
+                    <label class="form-check-label" for="showActive">Только активные</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="showKing" checked>
+                    <label class="form-check-label" for="showKing">Только King</label>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary" onclick="sortTable('status')">
+                        <i class="fas fa-sort"></i> По статусу
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="sortTable('type')">
+                        <i class="fas fa-sort"></i> По типу
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped" id="accountsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Имя аккаунта</th>
+                        <th>Статус</th>
+                        <th>Тип</th>
+                        <th>Вертикаль</th>
+                        <th>Баланс</th>
+                        <th>Валюта</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr data-status="{{ account.status }}" data-type="{{ account.type }}">
+                        <td>{{ account.id_acc_bd }}</td>
+                        <td>
+                            <a href="{% url 'dashboard:accs_detail' account.id_acc_bd %}" class="text-primary">
+                                {{ account.acc_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge {% if account.status == 'ACTIVE' %}bg-success
+                                             {% elif account.status == 'PendingUnban' %}bg-warning
+                                             {% elif account.status == 'BAN' %}bg-danger
+                                             {% elif account.status == 'MOD' %}bg-warning
+                                             {% elif account.status == 'PAUSE' %}bg-secondary
+                                             {% elif account.status == 'NEW' %}bg-info
+                                             {% elif account.status == 'READY' %}bg-success
+                                             {% elif account.status == 'WarmUp' %}bg-primary
+                                             {% else %}bg-secondary{% endif %}">
+                                {{ account.status }}
+                            </span>
+                        </td>
+                        <td>{{ account.type }}</td>
+                        <td>{{ account.vertical|default:"-" }}</td>
+                        <td>{{ account.balance|floatformat:2 }}</td>
+                        <td>{{ account.currency }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Нет доступных аккаунтов</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Функция для фильтрации таблицы
+    function filterTable() {
+        const showActive = document.getElementById('showActive').checked;
+        const showKing = document.getElementById('showKing').checked;
+        const rows = document.querySelectorAll('#accountsTable tbody tr');
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            const type = row.getAttribute('data-type');
+            const isActive = status === 'ACTIVE';
+            const isKing = type === 'king';
+
+            if (showActive && !isActive) {
+                row.style.display = 'none';
+            } else if (showKing && !isKing) {
+                row.style.display = 'none';
+            } else {
+                row.style.display = '';
+            }
+        });
+    }
+
+    // Функция для сортировки таблицы
+    function sortTable(column) {
+        const table = document.getElementById('accountsTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const isAsc = table.getAttribute('data-sort') === 'asc';
+        
+        rows.sort((a, b) => {
+            const aValue = a.getAttribute(`data-${column}`);
+            const bValue = b.getAttribute(`data-${column}`);
+            
+            if (isAsc) {
+                return aValue.localeCompare(bValue);
+            } else {
+                return bValue.localeCompare(aValue);
+            }
+        });
+
+        // Очищаем и заполняем таблицу отсортированными строками
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+
+        // Меняем направление сортировки
+        table.setAttribute('data-sort', isAsc ? 'desc' : 'asc');
+    }
+
+    // Добавляем обработчики событий для чекбоксов
+    document.getElementById('showActive').addEventListener('change', filterTable);
+    document.getElementById('showKing').addEventListener('change', filterTable);
+</script>
+{% endblock %} 

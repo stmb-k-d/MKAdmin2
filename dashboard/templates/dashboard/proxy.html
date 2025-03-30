@@ -1,0 +1,130 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Прокси{% endblock %}
+
+{% block page_title %}Управление прокси{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Управление прокси</h5>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-plus"></i> Добавить прокси
+            </button>
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-sync"></i> Проверить все прокси
+            </button>
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-check-circle"></i> Проверить качество IP
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle"></i> Количество свободных прокси: <span id="free-proxies-count">0</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>IP</th>
+                        <th>Тип</th>
+                        <th>Логин</th>
+                        <th>Пароль</th>
+                        <th>Порт SOCKS5</th>
+                        <th>Порт HTTPS</th>
+                        <th>Гео</th>
+                        <th>Статус</th>
+                        <th>Стоимость</th>
+                        <th>Валюта</th>
+                        <th>Аккаунт</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proxy in proxies %}
+                    <tr>
+                        <td>{{ proxy.proxy_id }}</td>
+                        <td>
+                            <a href="{% url 'dashboard:proxy_detail' proxy.proxy_id %}" class="text-primary">
+                                {{ proxy.ip }}
+                            </a>
+                        </td>
+                        <td>{{ proxy.type }}</td>
+                        <td>{{ proxy.login|default:"-" }}</td>
+                        <td>{{ proxy.psw|default:"-" }}</td>
+                        <td>{{ proxy.port_socks5 }}</td>
+                        <td>{{ proxy.port_https }}</td>
+                        <td>
+                            {% with country_code=proxy.geo|lower %}
+                                {% if country_code == 'us' %}🇺🇸
+                                {% elif country_code == 'gb' %}🇬🇧
+                                {% elif country_code == 'de' %}🇩🇪
+                                {% elif country_code == 'fr' %}🇫🇷
+                                {% elif country_code == 'it' %}🇮🇹
+                                {% elif country_code == 'es' %}🇪🇸
+                                {% elif country_code == 'nl' %}🇳🇱
+                                {% elif country_code == 'pl' %}🇵🇱
+                                {% elif country_code == 'ru' %}🇷🇺
+                                {% elif country_code == 'ua' %}🇺🇦
+                                {% elif country_code == 'kz' %}🇰🇿
+                                {% elif country_code == 'br' %}🇧🇷
+                                {% elif country_code == 'ca' %}🇨🇦
+                                {% elif country_code == 'au' %}🇦🇺
+                                {% elif country_code == 'jp' %}🇯🇵
+                                {% elif country_code == 'kr' %}🇰🇷
+                                {% elif country_code == 'cn' %}🇨🇳
+                                {% elif country_code == 'in' %}🇮🇳
+                                {% elif country_code == 'sg' %}🇸🇬
+                                {% elif country_code == 'ae' %}🇦🇪
+                                {% endif %}
+                                {{ proxy.geo|upper }}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if proxy.status == 'work' %}
+                                <span class="badge bg-success">Активный</span>
+                            {% elif proxy.status == 'new' %}
+                                <span class="badge bg-warning">Новый</span>
+                            {% elif proxy.status == 'inactive' %}
+                                <span class="badge bg-danger">Неактивный</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Неизвестно</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ proxy.proxy_cost|floatformat:2 }}</td>
+                        <td>{{ proxy.proxy_cur }}</td>
+                        <td>{{ proxy.accs|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" class="text-center">Нет доступных прокси</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Функция для подсчета свободных прокси
+    function updateFreeProxiesCount() {
+        fetch('/proxy/count-free/')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('free-proxies-count').textContent = data.count;
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Обновляем счетчик при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateFreeProxiesCount();
+    });
+</script>
+{% endblock %} 

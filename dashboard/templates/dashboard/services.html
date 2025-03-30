@@ -1,0 +1,187 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Сервисы{% endblock %}
+
+{% block page_title %}Управление сервисами{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Фильтры -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <form class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select">
+                                <option>Все категории</option>
+                                <option>Прокси</option>
+                                <option>Аккаунты</option>
+                                <option>Реклама</option>
+                                <option>Аналитика</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Статус</label>
+                            <select class="form-select">
+                                <option>Все статусы</option>
+                                <option>Активные</option>
+                                <option>Неактивные</option>
+                                <option>В обслуживании</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Поиск</label>
+                            <input type="text" class="form-control" placeholder="Поиск по названию...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">Применить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Карточки сервисов -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Прокси-сервис</h5>
+                        <span class="badge bg-success">Активен</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Управление прокси-серверами для рекламных кампаний</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> 100+ прокси</li>
+                        <li><i class="fas fa-check text-success"></i> Автоматическая ротация</li>
+                        <li><i class="fas fa-check text-success"></i> Мониторинг доступности</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm">Настроить</button>
+                    <button class="btn btn-info btn-sm">Статистика</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Управление аккаунтами</h5>
+                        <span class="badge bg-success">Активен</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Управление рекламными аккаунтами Facebook</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> 50+ аккаунтов</li>
+                        <li><i class="fas fa-check text-success"></i> Автоматическая проверка</li>
+                        <li><i class="fas fa-check text-success"></i> Управление балансами</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm">Настроить</button>
+                    <button class="btn btn-info btn-sm">Статистика</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Рекламные кампании</h5>
+                        <span class="badge bg-success">Активен</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Управление рекламными кампаниями</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> 30+ кампаний</li>
+                        <li><i class="fas fa-check text-success"></i> Автоматическая оптимизация</li>
+                        <li><i class="fas fa-check text-success"></i> A/B тестирование</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm">Настроить</button>
+                    <button class="btn btn-info btn-sm">Статистика</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Аналитика</h5>
+                        <span class="badge bg-warning">В обслуживании</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Анализ эффективности рекламных кампаний</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Детальная статистика</li>
+                        <li><i class="fas fa-check text-success"></i> Прогнозирование</li>
+                        <li><i class="fas fa-check text-success"></i> Отчеты</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm">Настроить</button>
+                    <button class="btn btn-info btn-sm">Статистика</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Автоматизация</h5>
+                        <span class="badge bg-danger">Неактивен</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Автоматизация рутинных задач</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Планировщик задач</li>
+                        <li><i class="fas fa-check text-success"></i> Автоматические отчеты</li>
+                        <li><i class="fas fa-check text-success"></i> Интеграции</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm">Активировать</button>
+                    <button class="btn btn-info btn-sm">Подробнее</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">API</h5>
+                        <span class="badge bg-success">Активен</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">API для интеграции с внешними системами</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> REST API</li>
+                        <li><i class="fas fa-check text-success"></i> Webhooks</li>
+                        <li><i class="fas fa-check text-success"></i> Документация</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm">Настроить</button>
+                    <button class="btn btn-info btn-sm">Документация</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

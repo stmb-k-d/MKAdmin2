@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Retro Sounds</title>
+</head>
+<body>
+    <h1>Генерация ретро-звуков</h1>
+    <p>Нажмите на кнопку ниже, чтобы сгенерировать звуки:</p>
+    <button onclick="generateSounds()">Сгенерировать звуки</button>
+    <script>
+        function generateSounds() {
+            // Создаем AudioContext
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Функция для создания звука
+            function createSound(frequency, duration, volume = 0.5) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = frequency;
+                gainNode.gain.value = volume;
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + duration);
+            }
+            
+            // Генерируем звуки
+            createSound(440, 0.1, 0.3); // menuSelect
+            setTimeout(() => createSound(880, 0.05, 0.2), 200); // menuMove
+            setTimeout(() => createSound(220, 0.15, 0.4), 400); // buttonClick
+            setTimeout(() => createSound(880, 0.2, 0.3), 600); // success
+            setTimeout(() => createSound(110, 0.2, 0.3), 800); // error
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,352 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Детали аккаунта{% endblock %}
+
+{% block page_title %}Детали аккаунта{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Информация об аккаунте</h5>
+        <div>
+            <a href="{% url 'dashboard:accs' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if account %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6 class="mb-3">Действия с аккаунтом</h6>
+                    <div class="row g-2">
+                        <!-- Рекламные кабинеты -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Рекламные кабинеты</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-plus"></i> Добавить РК к аккаунту
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-trash"></i> Удалить РК с аккаунта
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-exchange-alt"></i> Изменить статус РК
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Основные настройки -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Основные настройки</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-edit"></i> Изменить Fan Page аккаунта
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-toggle-on"></i> Изменить статус аккаунта
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-key"></i> Показать токен аккаунта
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Карты -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Карты</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-credit-card"></i> Добавить карту к аккаунту
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-link"></i> Закрепить карту за аккаунтом
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Токены и идентификаторы -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Токены и идентификаторы</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-key"></i> Изменить токен аккаунта
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-id-card"></i> Изменить FBT Acc ID
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-bullhorn"></i> Изменить KT Campaign ID
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-toggle-on"></i> Не уникальные клики в KT
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные настройки -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Дополнительные настройки</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-chart-line"></i> Изменить вертикаль аккаунта
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-comment"></i> Изменить дополнительный комментарий
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-lock"></i> Изменить пароль аккаунта
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-envelope"></i> Изменить пароль от Email
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-shield-alt"></i> Изменить 2FA
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные действия -->
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Дополнительные действия</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-sms"></i> SMS Code 3DS AdsCards
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-chart-bar"></i> Отчет по расходу за все время
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-plus-circle"></i> Добавить прокси c FbTool в OctoBrowser
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-plus-circle"></i> Добавить аккаунт в OctoBrowser
+                                        </button>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-times-circle"></i> Аккаунту нет у в FbTool
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>ID</th>
+                            <td>{{ account.id_acc_bd }}</td>
+                        </tr>
+                        <tr>
+                            <th>Имя аккаунта</th>
+                            <td>{{ account.acc_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email</th>
+                            <td>{{ account.email }}</td>
+                        </tr>
+                        <tr>
+                            <th>Пароль</th>
+                            <td>{{ account.psw|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>2FA</th>
+                            <td>{{ account.f2a|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Cookie</th>
+                            <td>
+                                {% if account.cookie %}
+                                    <span class="text-success">
+                                        <i class="fas fa-check"></i> Есть
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Токен</th>
+                            <td>
+                                {% if account.token %}
+                                    <span class="text-warning">
+                                        <i class="fas fa-key"></i> Есть
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Тип</th>
+                            <td>{{ account.type }}</td>
+                        </tr>
+                        <tr>
+                            <th>Статус</th>
+                            <td>
+                                <span class="badge {% if account.status == 'ACTIVE' %}bg-success
+                                                 {% elif account.status == 'PendingUnban' %}bg-warning
+                                                 {% elif account.status == 'BAN' %}bg-danger
+                                                 {% elif account.status == 'MOD' %}bg-warning
+                                                 {% elif account.status == 'PAUSE' %}bg-secondary
+                                                 {% elif account.status == 'NEW' %}bg-info
+                                                 {% elif account.status == 'READY' %}bg-success
+                                                 {% elif account.status == 'WarmUp' %}bg-primary
+                                                 {% else %}bg-secondary{% endif %}">
+                                    {{ account.status }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Баланс</th>
+                            <td>{{ account.balance|floatformat:2 }} {{ account.currency }}</td>
+                        </tr>
+                        <tr>
+                            <th>Вертикаль</th>
+                            <td>{{ account.vertical|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Прокси ID</th>
+                            <td>{{ account.proxy_id|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>KT Campaign ID</th>
+                            <td>{{ account.kt_campaign_id|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Название кампании</th>
+                            <td>{{ account.kt_campaign_name|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>FBT статус</th>
+                            <td>{{ account.fbt_status|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>FBT ID</th>
+                            <td>{{ account.fbt_id|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>FBT Proxy ID</th>
+                            <td>{{ account.fbt_proxy_id|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>FBT Acc ID</th>
+                            <td>{{ account.fbt_acc_id|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Загружен FBTool</th>
+                            <td>{{ account.upload_fbtool|yesno:"Да,Нет" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6>Рекламные кабинеты</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if account.rk_list %}
+                                    {% for rk in account.rk_list %}
+                                        <tr>
+                                            <td>{{ rk.0 }}</td>
+                                            <td>
+                                                <span class="badge {% if rk.1 == 'ACTIVE' %}bg-success
+                                                                 {% elif rk.1 == 'PendingUnban' %}bg-warning
+                                                                 {% elif rk.1 == 'BAN' %}bg-danger
+                                                                 {% elif rk.1 == 'MOD' %}bg-warning
+                                                                 {% elif rk.1 == 'PAUSE' %}bg-secondary
+                                                                 {% elif rk.1 == 'NEW' %}bg-info
+                                                                 {% elif rk.1 == 'READY' %}bg-success
+                                                                 {% elif rk.1 == 'WarmUp' %}bg-primary
+                                                                 {% else %}bg-secondary{% endif %}">
+                                                    {{ rk.1 }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="2" class="text-center">Нет доступных рекламных кабинетов</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6>Дополнительная информация</h6>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Комментарии</th>
+                            <td>{{ account.comments|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Доп. комментарии</th>
+                            <td>{{ account.dop_comment|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Последнее обновление баланса</th>
+                            <td>{{ account.last_spend_update_time|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                Аккаунт не найден
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

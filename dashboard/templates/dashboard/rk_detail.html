@@ -1,0 +1,336 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Детали рекламного кабинета{% endblock %}
+
+{% block page_title %}Детали рекламного кабинета{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Информация о рекламном кабинете</h5>
+        <div>
+            <a href="{% url 'dashboard:rk' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if rk %}
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>ID</th>
+                                    <td>{{ rk.id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>РК ID</th>
+                                    <td>{{ rk.rk_id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Аккаунт</th>
+                                    <td>{{ rk.id_acc_bd }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Статус</th>
+                                    <td>
+                                        <span class="badge {% if rk.live_status == 'ACTIVE' %}bg-success
+                                                         {% elif rk.live_status == 'PendingUnban' %}bg-warning
+                                                         {% elif rk.live_status == 'BAN' %}bg-danger
+                                                         {% elif rk.live_status == 'MOD' %}bg-warning
+                                                         {% elif rk.live_status == 'PAUSE' %}bg-secondary
+                                                         {% elif rk.live_status == 'NEW' %}bg-info
+                                                         {% elif rk.live_status == 'READY' %}bg-success
+                                                         {% elif rk.live_status == 'WarmUp' %}bg-primary
+                                                         {% else %}bg-secondary{% endif %}">
+                                            {{ rk.live_status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Баланс</th>
+                                    <td>{{ rk.fb_spend|floatformat:2 }} {{ rk.rk_cur }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Вертикаль</th>
+                                    <td>{{ rk.vertical|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Прокси ID</th>
+                                    <td>{{ rk.proxy_id|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Гео</th>
+                                    <td>{{ rk.geo_buying|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>App ID</th>
+                                    <td>{{ rk.app_id|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Creo ID</th>
+                                    <td>{{ rk.creo_id|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Тип оптимизации</th>
+                                    <td>{{ rk.type_optimization|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Статус FB</th>
+                                    <td>
+                                        <span class="badge {% if rk.fb_status == 'ACTIVE' %}bg-success
+                                                         {% elif rk.fb_status == 'PAUSED' %}bg-warning
+                                                         {% elif rk.fb_status == 'DELETED' %}bg-danger
+                                                         {% else %}bg-secondary{% endif %}">
+                                            {{ rk.fb_status|default:"-" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Клики FB</th>
+                                    <td>{{ rk.fb_clicks|default:"0" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Стоимость клика FB</th>
+                                    <td>{{ rk.fb_cost_per_unique_click|floatformat:2|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>CPC</th>
+                                    <td>{{ rk.fb_cpc|floatformat:2|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>CPM</th>
+                                    <td>{{ rk.fb_cpm|floatformat:2|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>CTR</th>
+                                    <td>{{ rk.fb_ctr|floatformat:2|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Импрессии</th>
+                                    <td>{{ rk.fb_impressions|default:"0" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Цель FB</th>
+                                    <td>{{ rk.fb_objective|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Потрачено FB</th>
+                                    <td>{{ rk.fb_spend|floatformat:2|default:"0" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Метрики и показатели</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Качество FB</th>
+                                            <th>Взаимодействия FB</th>
+                                            <th>Метрики</th>
+                                            <th>Финансовые показатели</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <table class="table table-sm mb-0">
+                                                    <tr>
+                                                        <th>Organic:</th>
+                                                        <td>{{ rk.fb_quality_score_organic|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>ECTR:</th>
+                                                        <td>{{ rk.fb_quality_score_ectr|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>ECVR:</th>
+                                                        <td>{{ rk.fb_quality_score_ecvr|default:"-" }}</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table class="table table-sm mb-0">
+                                                    <tr>
+                                                        <th>Link:</th>
+                                                        <td>{{ rk.fb_link_click|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Video:</th>
+                                                        <td>{{ rk.fb_video_view|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Page:</th>
+                                                        <td>{{ rk.fb_page_engagement|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Post:</th>
+                                                        <td>{{ rk.fb_post_engagement|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Reaction:</th>
+                                                        <td>{{ rk.fb_post_reaction|default:"0" }}</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table class="table table-sm mb-0">
+                                                    <tr>
+                                                        <th>C2I:</th>
+                                                        <td>{{ rk.c2i|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>CR2I:</th>
+                                                        <td>{{ rk.cr2i|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>CPI:</th>
+                                                        <td>{{ rk.cpi|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Regs:</th>
+                                                        <td>{{ rk.regs|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>CR2R:</th>
+                                                        <td>{{ rk.cr2r|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>I2R:</th>
+                                                        <td>{{ rk.i2r|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>CPR:</th>
+                                                        <td>{{ rk.cpr|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>CR2D:</th>
+                                                        <td>{{ rk.cr2d|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>R2S:</th>
+                                                        <td>{{ rk.r2s|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>CPS:</th>
+                                                        <td>{{ rk.cps|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>DEPS:</th>
+                                                        <td>{{ rk.deps|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table class="table table-sm mb-0">
+                                                    <tr>
+                                                        <th>Доход:</th>
+                                                        <td>{{ rk.income|floatformat:2|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Прибыль:</th>
+                                                        <td>{{ rk.bprofit|floatformat:2|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>ROI:</th>
+                                                        <td>{{ rk.broi|floatformat:2|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Тип:</th>
+                                                        <td>{{ rk.install_or_dep|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Лимит:</th>
+                                                        <td>{{ rk.rk_limit|floatformat:2|default:"-" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Прогрев:</th>
+                                                        <td>{{ rk.spend_warm|floatformat:2|default:"0" }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Уникальные клики KT:</th>
+                                                        <td>{{ rk.kt_unic_clicks|default:"0" }}</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Дополнительная информация</h6>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Часовой пояс</th>
+                                    <td>{{ rk.time_zone|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>KT Campaign</th>
+                                    <td>{{ rk.kt_campaign_name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Ad ID</th>
+                                    <td>{{ rk.ad_id|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Pixel ID</th>
+                                    <td>{{ rk.pixel_id|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Комментарий</th>
+                                    <td>{{ rk.comment|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Последнее обновление</th>
+                                    <td>{{ rk.last_update|date:"d.m.Y H:i"|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Действия</h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="list-group list-group-flush">
+                                <button class="list-group-item list-group-item-action small" disabled>Изменить статус РК</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить расходы РК за конкретную дату</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить расходы РК за все время</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить AD ID</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить KT Campaign ID</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить PIXEL ID</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить Pixel Token</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Загрузить конверсии в Pixel</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Добавить карту вручную</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Обновить комментарий</button>
+                                <button class="list-group-item list-group-item-action small" disabled>Залить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                Рекламный кабинет не найден
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

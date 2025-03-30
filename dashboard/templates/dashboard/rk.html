@@ -1,0 +1,125 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Рекламные кабинеты{% endblock %}
+
+{% block page_title %}Рекламные кабинеты{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Управление рекламными кабинетами</h5>
+        <div>
+            <button class="btn btn-outline-primary" disabled>
+                <i class="fas fa-plus"></i> Добавить РК
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="rkTable" class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>РК ID</th>
+                        <th>Аккаунт</th>
+                        <th>Статус</th>
+                        <th>Баланс</th>
+                        <th>Вертикаль</th>
+                        <th>Прокси ID</th>
+                        <th>Гео</th>
+                        <th>App ID</th>
+                        <th>Creo ID</th>
+                        <th>Тип оптимизации</th>
+                        <th>Статус FB</th>
+                        <th>Клики FB</th>
+                        <th>Стоимость клика FB</th>
+                        <th>CPC</th>
+                        <th>CPM</th>
+                        <th>CTR</th>
+                        <th>Импрессии</th>
+                        <th>Цель FB</th>
+                        <th>Потрачено FB</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rk in rks %}
+                    <tr>
+                        <td>{{ rk.id }}</td>
+                        <td>
+                            <a href="{% url 'dashboard:rk_detail' rk.id %}" class="text-primary">
+                                {{ rk.rk_id }}
+                            </a>
+                        </td>
+                        <td>{{ rk.id_acc_bd }}</td>
+                        <td>
+                            <span class="badge {% if rk.live_status == 'ACTIVE' %}bg-success
+                                             {% elif rk.live_status == 'PendingUnban' %}bg-warning
+                                             {% elif rk.live_status == 'BAN' %}bg-danger
+                                             {% elif rk.live_status == 'MOD' %}bg-warning
+                                             {% elif rk.live_status == 'PAUSE' %}bg-secondary
+                                             {% elif rk.live_status == 'NEW' %}bg-info
+                                             {% elif rk.live_status == 'READY' %}bg-success
+                                             {% elif rk.live_status == 'WarmUp' %}bg-primary
+                                             {% else %}bg-secondary{% endif %}">
+                                {{ rk.live_status }}
+                            </span>
+                        </td>
+                        <td>{{ rk.fb_spend|floatformat:2 }} {{ rk.rk_cur }}</td>
+                        <td>{{ rk.vertical|default:"-" }}</td>
+                        <td>{{ rk.proxy_id|default:"-" }}</td>
+                        <td>{{ rk.geo_buying|default:"-" }}</td>
+                        <td>{{ rk.app_id|default:"-" }}</td>
+                        <td>{{ rk.creo_id|default:"-" }}</td>
+                        <td>{{ rk.type_optimization|default:"-" }}</td>
+                        <td>
+                            <span class="badge {% if rk.fb_status == 'ACTIVE' %}bg-success
+                                             {% elif rk.fb_status == 'PAUSED' %}bg-warning
+                                             {% elif rk.fb_status == 'DELETED' %}bg-danger
+                                             {% else %}bg-secondary{% endif %}">
+                                {{ rk.fb_status|default:"-" }}
+                            </span>
+                        </td>
+                        <td>{{ rk.fb_clicks|default:"0" }}</td>
+                        <td>{{ rk.fb_cost_per_unique_click|floatformat:2|default:"-" }}</td>
+                        <td>{{ rk.fb_cpc|floatformat:2|default:"-" }}</td>
+                        <td>{{ rk.fb_cpm|floatformat:2|default:"-" }}</td>
+                        <td>{{ rk.fb_ctr|floatformat:2|default:"-" }}</td>
+                        <td>{{ rk.fb_impressions|default:"0" }}</td>
+                        <td>{{ rk.fb_objective|default:"-" }}</td>
+                        <td>{{ rk.fb_spend|floatformat:2|default:"0" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#rkTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Russian.json"
+            },
+            "pageLength": 25,
+            "order": [[0, "desc"]],
+            "responsive": true,
+            "scrollX": true,
+            "scrollY": "70vh",
+            "scrollCollapse": true,
+            "fixedHeader": true
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 
