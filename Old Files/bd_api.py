@@ -313,6 +313,10 @@ class Database:
         sql = 'SELECT * FROM rk_data_daily WHERE rk_id=$1 AND date_log=$2'
         return await self.execute(sql, rk_id, date_log, fetchrow=True)
 
+    async def get_deily_stat_ad(self, ad_id, date_log):
+        sql = 'SELECT * FROM ad_data_daily WHERE ad_id=$1 AND date_log=$2'
+        return await self.execute(sql, ad_id, date_log, fetchrow=True)
+
     async def get_daily_stat_all_rk_by_date(self, date_log):
         sql = 'SELECT * FROM rk_data_daily WHERE date_log=$1'
         return await self.execute(sql, date_log, fetch=True)
@@ -353,8 +357,16 @@ class Database:
         sql = 'SELECT * FROM rk_data WHERE rk_id=$1'
         return await self.execute(sql, rk_id, fetchrow=True)
 
+    async def get_stat_ad(self, ad_id: str):
+        sql = 'SELECT * FROM ad_data WHERE ad_id=$1'
+        return await self.execute(sql, ad_id, fetchrow=True)
+
     async def get_stat_rk_by_account_id(self, account_id):
         sql = 'SELECT * FROM rk_data WHERE rk_id=$1'
+        return await self.execute(sql, account_id, fetchrow=True)
+
+    async def get_stat_ad_by_ad_id(self, account_id):
+        sql = 'SELECT * FROM ad_data WHERE ad_id=$1'
         return await self.execute(sql, account_id, fetchrow=True)
 
 
@@ -366,6 +378,10 @@ class Database:
     async def add_rk_daily_stat(self, rk_id, date_log):
         sql = 'INSERT INTO rk_data_daily(rk_id, date_log) VALUES ($1, $2) returning *'
         return await self.execute(sql, rk_id, date_log, fetchrow=True)
+
+    async def add_ad_daily_stat(self, rk_id, date_log, ad_id, id_acc_bd, camp_id, adset_id):
+        sql = 'INSERT INTO ad_data_daily(rk_id, date_log, ad_id, id_acc_bd, camp_id, adset_id) VALUES ($1, $2, $3, $4, $5, $6) returning *'
+        return await self.execute(sql, rk_id, date_log, ad_id, id_acc_bd, camp_id, adset_id, fetchrow=True)
 
     async def add_card_in_bd(self, id_card_adscards: int, number: str, ads_limit, balance, date_card: str, cvc: str, adscard_status: str, issued: str, adscard_guid: str, comment: str, currency_type: str):
         sql = 'INSERT INTO cards_data(id_card_adscards, number, ads_limit, balance, date_card, cvc, adscard_status, issued, adscard_guid, comment, currency_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *'
@@ -379,6 +395,10 @@ class Database:
         sql = 'INSERT INTO rk_data(rk_id, id_acc_bd) VALUES ($1, $2) returning *'
         return await self.execute(sql, rk_id, id_acc_bd, fetchrow=True)
 
+    async def add_ad_stat(self, rk_id, id_acc_bd, camp_id, adset_id, ad_id):
+        sql = 'INSERT INTO ad_data(rk_id, id_acc_bd, camp_id, adset_id, ad_id) VALUES ($1, $2, $3, $4, $5) returning *'
+        return await self.execute(sql, rk_id, id_acc_bd, camp_id, adset_id, ad_id, fetchrow=True)
+
     async def add_rk_stat_with_status(self, rk_id, id_acc_bd, live_status):
         sql = 'INSERT INTO rk_data(rk_id, id_acc_bd, live_status) VALUES ($1, $2, $3) returning *'
         return await self.execute(sql, rk_id, id_acc_bd, live_status, fetchrow=True)
@@ -387,6 +407,10 @@ class Database:
     async def update_rk_daily_stat(self, rk_id: str, date_log, fb_effective_status: str, fb_status: str, fb_clicks: int, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update, time_zone):
         sql = 'UPDATE rk_data_daily SET fb_effective_status=$3, fb_status=$4, fb_clicks=$5, fb_cost_per_unique_click=$6, fb_cpc=$7, fb_cpm=$8, fb_ctr=$9, fb_impressions=$10, fb_objective=$11, fb_spend=$12, fb_quality_score_organic=$13, fb_quality_score_ectr=$14, fb_quality_score_ecvr=$15, fb_link_click=$16, fb_video_view=$17, fb_page_engagement=$18, fb_post_engagement=$19, fb_post_reaction=$20, last_update=$21, time_zone=$22  WHERE rk_id=$1 AND date_log=$2 returning *'
         return await self.execute(sql, rk_id, date_log, fb_effective_status, fb_status, fb_clicks, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update, time_zone, execute=True)
+
+    async def update_ad_daily_stat(self, rk_id: str, date_log, fb_effective_status: str, fb_status: str, fb_clicks: int, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update, time_zone, ad_id):
+        sql = 'UPDATE ad_data_daily SET fb_effective_status=$3, fb_status=$4, fb_clicks=$5, fb_cost_per_unique_click=$6, fb_cpc=$7, fb_cpm=$8, fb_ctr=$9, fb_impressions=$10, fb_objective=$11, fb_spend=$12, fb_quality_score_organic=$13, fb_quality_score_ectr=$14, fb_quality_score_ecvr=$15, fb_link_click=$16, fb_video_view=$17, fb_page_engagement=$18, fb_post_engagement=$19, fb_post_reaction=$20, last_update=$21, time_zone=$22, rk_id=$1  WHERE ad_id=$23 AND date_log=$2 returning *'
+        return await self.execute(sql, rk_id, date_log, fb_effective_status, fb_status, fb_clicks, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update, time_zone, ad_id, execute=True)
 
     async def update_rk_daily_spend(self, rk_id: str, date_log, fb_spend):
         sql = 'UPDATE rk_data_daily SET fb_spend=$3 WHERE rk_id=$1 AND date_log=$2 returning *'
@@ -511,13 +535,25 @@ class Database:
         sql = 'UPDATE rk_data SET fb_effective_status=$2, fb_status=$3, fb_clicks=$4, fb_cost_per_unique_click=$5, fb_cpc=$6, fb_cpm=$7, fb_ctr=$8, fb_impressions=$9, fb_objective=$10, fb_spend=$11, fb_quality_score_organic=$12, fb_quality_score_ectr=$13, fb_quality_score_ecvr=$14, fb_link_click=$15, fb_video_view=$16, fb_page_engagement=$17, fb_post_engagement=$18, fb_post_reaction=$19, last_update_fbt=$20, time_zone=$21  WHERE rk_id=$1 returning *'
         return await self.execute(sql, rk_id, fb_effective_status, fb_status, fb_clicks, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update_fbt, time_zone, execute=True)
 
+    async def update_ad_stat_fbt(self, ad_id: str, fb_effective_status: str, fb_status: str, fb_clicks: int, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update_fbt, time_zone):
+        sql = 'UPDATE ad_data SET fb_effective_status=$2, fb_status=$3, fb_clicks=$4, fb_cost_per_unique_click=$5, fb_cpc=$6, fb_cpm=$7, fb_ctr=$8, fb_impressions=$9, fb_objective=$10, fb_spend=$11, fb_quality_score_organic=$12, fb_quality_score_ectr=$13, fb_quality_score_ecvr=$14, fb_link_click=$15, fb_video_view=$16, fb_page_engagement=$17, fb_post_engagement=$18, fb_post_reaction=$19, last_update_fbt=$20, time_zone=$21  WHERE ad_id=$1 returning *'
+        return await self.execute(sql, ad_id, fb_effective_status, fb_status, fb_clicks, fb_cost_per_unique_click, fb_cpc, fb_cpm, fb_ctr, fb_impressions, fb_objective, fb_spend, fb_quality_score_organic, fb_quality_score_ectr, fb_quality_score_ecvr, fb_link_click, fb_video_view, fb_page_engagement, fb_post_engagement, fb_post_reaction, last_update_fbt, time_zone, execute=True)
+
     async def update_kr_daily_stat_kt(self, rk_id: str, date_log, regs: int, deps: int, last_update_kt, kt_unic_clicks):
         sql = 'UPDATE rk_data_daily SET regs=$3, deps=$4, last_update_kt=$5, kt_unic_clicks=$6 WHERE rk_id=$1 AND date_log=$2 returning *'
         return await self.execute(sql, rk_id, date_log, regs, deps, last_update_kt, kt_unic_clicks, execute=True)
 
+    async def update_ad_daily_stat_kt(self, ad_id: str, date_log, regs: int, deps: int, last_update_kt, kt_unic_clicks):
+        sql = 'UPDATE ad_data_daily SET regs=$3, deps=$4, last_update_kt=$5, kt_unic_clicks=$6 WHERE ad_id=$1 AND date_log=$2 returning *'
+        return await self.execute(sql, ad_id, date_log, regs, deps, last_update_kt, kt_unic_clicks, execute=True)
+
     async def update_rk_stat_kt(self, rk_id: str, regs: int, deps: int, last_update_kt, kt_unic_clicks):
         sql = 'UPDATE rk_data SET regs=$2, deps=$3, last_update_kt=$4, kt_unic_clicks=$5 WHERE rk_id=$1 returning *'
         return await self.execute(sql, rk_id, regs, deps, last_update_kt, kt_unic_clicks, execute=True)
+
+    async def update_ad_stat_kt(self, ad_id: str, regs: int, deps: int, last_update_kt, kt_unic_clicks):
+        sql = 'UPDATE ad_data SET regs=$2, deps=$3, last_update_kt=$4, kt_unic_clicks=$5 WHERE ad_id=$1 returning *'
+        return await self.execute(sql, ad_id, regs, deps, last_update_kt, kt_unic_clicks, execute=True)
 
     async def update_metrics_rk_daily_stat(self, rk_id, date_log, i2r, cpi, cr2r, cpr, cr2d, r2s, cps, broi, income, bprofit, c2i, cr2i):
         sql = 'UPDATE rk_data_daily SET i2r=$3, cpi=$4, cr2r=$5, cpr=$6, cr2d=$7, r2s=$8, cps=$9, broi=$10, income=$11, bprofit=$12, c2i=$13, cr2i=$14 WHERE rk_id=$1 AND date_log=$2 returning *'
@@ -599,32 +635,64 @@ class Database:
         sql = 'UPDATE rk_data SET kt_campaign_name=$2 WHERE rk_id=$1'
         return await self.execute(sql, account_id, kt_campaign_name, fetchrow=True)
 
+    async def update_ad_data_kt_campaign_name(self, account_id, kt_campaign_name):
+        sql = 'UPDATE ad_data SET kt_campaign_name=$2 WHERE ad_id=$1'
+        return await self.execute(sql, account_id, kt_campaign_name, fetchrow=True)
+
     async def update_rk_data_kt_campaign_name2(self, account_id, kt_campaign_name):
         sql = 'UPDATE rk_data_daily SET kt_campaign_name=$2 WHERE rk_id=$1'
+        return await self.execute(sql, account_id, kt_campaign_name, fetchrow=True)
+
+    async def update_ad_data_kt_campaign_name2(self, account_id, kt_campaign_name):
+        sql = 'UPDATE ad_data_daily SET kt_campaign_name=$2 WHERE ad_id=$1'
         return await self.execute(sql, account_id, kt_campaign_name, fetchrow=True)
 
     async def update_rk_data_kt_campaign_id(self, account_id, kt_campaign_id):
         sql = 'UPDATE rk_data SET kt_campaign_id=$2 WHERE rk_id=$1'
         return await self.execute(sql, account_id, kt_campaign_id, fetchrow=True)
 
+    async def update_ad_data_kt_campaign_id(self, account_id, kt_campaign_id):
+        sql = 'UPDATE ad_data SET kt_campaign_id=$2 WHERE ad_id=$1'
+        return await self.execute(sql, account_id, kt_campaign_id, fetchrow=True)
+
     async def update_rk_data_kt_campaign_id2(self, account_id, kt_campaign_id):
         sql = 'UPDATE rk_data_daily SET kt_campaign_id=$2 WHERE rk_id=$1'
+        return await self.execute(sql, account_id, kt_campaign_id, fetchrow=True)
+
+    async def update_ad_data_kt_campaign_id2(self, account_id, kt_campaign_id):
+        sql = 'UPDATE ad_data_daily SET kt_campaign_id=$2 WHERE ad_id=$1'
         return await self.execute(sql, account_id, kt_campaign_id, fetchrow=True)
 
     async def update_rk_data_creo_id(self, account_id, creo_id):
         sql = 'UPDATE rk_data SET creo_id=$2 WHERE rk_id=$1'
         return await self.execute(sql, account_id, creo_id, fetchrow=True)
 
+    async def update_ad_data_creo_id(self, account_id, creo_id):
+        sql = 'UPDATE ad_data SET creo_id=$2 WHERE ad_id=$1'
+        return await self.execute(sql, account_id, creo_id, fetchrow=True)
+
     async def update_rk_data_creo_id2(self, account_id, creo_id):
         sql = 'UPDATE rk_data_daily SET creo_id=$2 WHERE rk_id=$1'
+        return await self.execute(sql, account_id, creo_id, fetchrow=True)
+
+    async def update_ad_data_creo_id2(self, account_id, creo_id):
+        sql = 'UPDATE ad_data_daily SET creo_id=$2 WHERE ad_id=$1'
         return await self.execute(sql, account_id, creo_id, fetchrow=True)
 
     async def update_rk_data_install_or_dep(self, account_id, install_or_dep):
         sql = 'UPDATE rk_data SET install_or_dep=$2 WHERE rk_id=$1'
         return await self.execute(sql, account_id, install_or_dep, fetchrow=True)
 
+    async def update_ad_data_install_or_dep(self, account_id, install_or_dep):
+        sql = 'UPDATE ad_data SET install_or_dep=$2 WHERE ad_id=$1'
+        return await self.execute(sql, account_id, install_or_dep, fetchrow=True)
+
     async def update_rk_data_install_or_dep2(self, account_id, install_or_dep):
         sql = 'UPDATE rk_data_daily SET install_or_dep=$2 WHERE rk_id=$1'
+        return await self.execute(sql, account_id, install_or_dep, fetchrow=True)
+
+    async def update_ad_data_install_or_dep2(self, account_id, install_or_dep):
+        sql = 'UPDATE ad_data_daily SET install_or_dep=$2 WHERE ad_id=$1'
         return await self.execute(sql, account_id, install_or_dep, fetchrow=True)
 
     async def update_fbt_acc_id(self, id_acc_bd: int, fbt_acc_id: int):

@@ -8,18 +8,11 @@ def get_menu_items():
     return [
         {'name': 'dashboard', 'title': 'Дашборд', 'icon': 'fas fa-tachometer-alt'},
         {'name': 'proxy', 'title': 'Прокси', 'icon': 'fas fa-server'},
-        {
-            'name': 'facebook', 
-            'title': 'Facebook', 
-            'icon': 'fab fa-facebook',
-            'submenu': [
-                {'name': 'accs', 'title': 'Accounts', 'icon': 'fas fa-users'},
-                {'name': 'rk', 'title': 'Ads Cabinets', 'icon': 'fas fa-chart-line'},
-                {'name': 'campaigns', 'title': 'Campaigns', 'icon': 'fas fa-bullhorn'},
-                {'name': 'adsets', 'title': 'Adsets', 'icon': 'fas fa-layer-group'},
-                {'name': 'ads', 'title': 'Ads', 'icon': 'fas fa-ad'},
-            ]
-        },
+        {'name': 'accs', 'title': 'Аккаунты', 'icon': 'fas fa-users'},
+        {'name': 'rk', 'title': 'РК', 'icon': 'fas fa-chart-line'},
+        {'name': 'campaigns', 'title': 'Campaigns', 'icon': 'fas fa-bullhorn'},
+        {'name': 'adsets', 'title': 'Adsets', 'icon': 'fas fa-layer-group'},
+        {'name': 'ads', 'title': 'Ads', 'icon': 'fas fa-ad'},
         {'name': 'statistic', 'title': 'Статистика', 'icon': 'fas fa-chart-bar'},
         {'name': 'analytics', 'title': 'Аналитика', 'icon': 'fas fa-chart-pie'},
         {'name': 'tasks', 'title': 'Задачи', 'icon': 'fas fa-tasks'},
@@ -130,7 +123,7 @@ def rk_view(request):
                 fb_page_engagement,
                 fb_post_engagement,
                 fb_post_reaction,
-                last_update_fbt,
+                last_update,
                 rk_id,
                 time_zone,
                 kt_campaign_name,
@@ -289,13 +282,11 @@ def ad_detail(request, ad_id):
         # Получаем статистику по дням для этого объявления
         cursor.execute('''
             SELECT 
-                date_log, fb_spend, fb_cpm, fb_impressions, fb_clicks, 
-                fb_ctr, fb_cpc, fb_link_click, fb_cost_per_unique_click,
-                kt_unic_clicks, c2i, cr2i, cpi, regs, cr2r, i2r, cpr,
-                cr2d, r2s, cps, deps, income, bprofit, broi
+                date, fb_spend, fb_cpm, fb_impressions, fb_clicks, 
+                fb_ctr, fb_cpc, fb_link_click, fb_cost_per_unique_click 
             FROM ad_data_daily 
             WHERE ad_id = %s 
-            ORDER BY date_log DESC
+            ORDER BY date DESC
         ''', [ad_id])
         
         daily_columns = [col[0] for col in cursor.description]

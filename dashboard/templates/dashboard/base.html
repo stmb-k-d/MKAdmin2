@@ -10,8 +10,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="{% static 'dashboard/css/base.css' %}" rel="stylesheet">
-    <link href="{% static 'dashboard/css/monkey.css' %}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
     <style>
         :root {
             --primary-color: #007bff;
@@ -24,93 +23,105 @@
             --dark-color: #343a40;
             --text-color: #212529;
             --border-color: #dee2e6;
+            --bg-color: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-light: #dee2e6;
+            --hover-bg: #f8f9fa;
+            --active-bg: #e9ecef;
         }
 
         body {
-            background-color: var(--light-color);
-            color: var(--text-color);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
         }
 
-        /* Основной контейнер */
         .main-content {
-            background: #ffffff;
-            border-radius: 4px;
+            background: var(--bg-color);
+            border-radius: 8px;
             margin: 20px;
             padding: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        /* Навбар */
         .navbar {
-            background: #ffffff !important;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
+            background: var(--bg-color) !important;
+            border-bottom: 1px solid var(--border-light);
+            padding: 0.75rem 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .navbar-brand {
-            color: var(--text-color) !important;
-            font-weight: 500;
+            color: var(--text-primary) !important;
+            font-weight: 600;
         }
 
         .nav-link {
-            color: var(--text-color) !important;
+            color: var(--text-secondary) !important;
             padding: 0.5rem 1rem;
             margin: 0 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
         }
 
         .nav-link:hover {
             color: var(--primary-color) !important;
+            background-color: var(--hover-bg);
         }
 
         .nav-link.active {
             color: var(--primary-color) !important;
+            background-color: var(--active-bg);
             font-weight: 500;
         }
 
-        /* Карточки */
         .card {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            margin-bottom: 1rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .card-header {
-            background: #ffffff;
-            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-light);
             padding: 1rem;
-            font-weight: 500;
+            font-weight: 600;
+            color: var(--text-primary);
         }
 
-        /* Таблицы */
         .table {
             margin-bottom: 0;
+            color: var(--text-primary);
         }
 
         .table thead th {
-            background: #f8f9fa;
-            border-bottom: 2px solid var(--border-color);
-            font-weight: 500;
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-light);
+            font-weight: 600;
             padding: 0.75rem;
+            color: var(--text-primary);
         }
 
         .table tbody tr {
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-light);
         }
 
         .table tbody tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--hover-bg);
         }
 
-        /* Кнопки */
         .btn-primary {
             background: var(--primary-color);
             border-color: var(--primary-color);
             color: #ffffff;
             padding: 0.5rem 1rem;
             border-radius: 4px;
+            font-weight: 500;
         }
 
         .btn-primary:hover {
@@ -122,6 +133,7 @@
             color: var(--primary-color);
             border-color: var(--primary-color);
             background: transparent;
+            font-weight: 500;
         }
 
         .btn-outline-primary:hover {
@@ -129,27 +141,70 @@
             color: #ffffff;
         }
 
-        /* Модальные окна */
-        .modal-content {
-            border: none;
+        .badge {
+            padding: 0.5em 0.75em;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.85em;
+        }
+
+        .badge.bg-success {
+            background-color: var(--success-color) !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-warning {
+            background-color: var(--warning-color) !important;
+            color: #000000 !important;
+        }
+
+        .badge.bg-danger {
+            background-color: var(--danger-color) !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-secondary {
+            background-color: var(--secondary-color) !important;
+            color: #ffffff !important;
+        }
+
+        .matrix-icon {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: var(--bg-color) !important;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.375rem 0.75rem;
             border-radius: 4px;
         }
 
-        .modal-header {
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem;
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: var(--text-secondary) !important;
         }
 
-        .modal-footer {
-            border-top: 1px solid var(--border-color);
-            padding: 1rem;
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            color: #ffffff !important;
         }
 
-        /* Формы */
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: var(--hover-bg) !important;
+            border-color: var(--border-light) !important;
+            color: var(--text-primary) !important;
+        }
+
         .form-control {
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
             padding: 0.5rem 0.75rem;
+            border-radius: 4px;
         }
 
         .form-control:focus {
@@ -157,25 +212,27 @@
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         }
 
-        /* Бейджи */
-        .badge {
-            padding: 0.5em 0.75em;
-            border-radius: 4px;
-            font-weight: 500;
+        .modal-content {
+            background-color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
         }
 
-        /* Иконки */
-        .matrix-icon {
-            margin-right: 0.5rem;
-            color: var(--primary-color);
+        .modal-header {
+            border-bottom: 1px solid var(--border-light);
+            padding: 1rem;
         }
 
-        /* Адаптивность */
+        .modal-footer {
+            border-top: 1px solid var(--border-light);
+            padding: 1rem;
+        }
+
         @media (max-width: 991.98px) {
             .navbar-collapse {
-                background: #ffffff;
-                border: 1px solid var(--border-color);
-                border-radius: 4px;
+                background: var(--bg-color);
+                border: 1px solid var(--border-light);
+                border-radius: 8px;
                 margin-top: 0.5rem;
                 padding: 0.5rem;
             }
@@ -185,12 +242,46 @@
                 margin: 0.25rem 0;
             }
         }
+
+        /* Стили для выпадающего меню */
+        .dropdown-menu {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            color: var(--primary-color);
+            background-color: var(--hover-bg);
+        }
+
+        .dropdown-item.active {
+            color: var(--primary-color);
+            background-color: var(--active-bg);
+            font-weight: 500;
+        }
+
+        .nav-item.dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-toggle::after {
+            margin-left: 0.5em;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="cyber-grid"></div>
-    
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'dashboard:dashboard' %}">
@@ -202,12 +293,30 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% for item in menu_items %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == item.name %}active{% endif %}" 
-                           href="{% url 'dashboard:'|add:item.name %}">
-                            <i class="{{ item.icon }} matrix-icon"></i>{{ item.title }}
-                        </a>
-                    </li>
+                        {% if item.submenu %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown{{ item.name }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="{{ item.icon }} matrix-icon"></i>{{ item.title }}
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarDropdown{{ item.name }}">
+                                    {% for submenu_item in item.submenu %}
+                                        <li>
+                                            <a class="dropdown-item {% if request.resolver_match.url_name == submenu_item.name %}active{% endif %}" 
+                                               href="{% url 'dashboard:'|add:submenu_item.name %}">
+                                                <i class="{{ submenu_item.icon }} matrix-icon"></i>{{ submenu_item.title }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == item.name %}active{% endif %}"
+                                   href="{% url 'dashboard:'|add:item.name %}">
+                                    <i class="{{ item.icon }} matrix-icon"></i>{{ item.title }}
+                                </a>
+                            </li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             </div>
@@ -229,30 +338,6 @@
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="{% static 'dashboard/js/sounds.js' %}"></script>
-    <script src="{% static 'dashboard/js/monkey.js' %}"></script>
-    <script>
-        // Инициализация DataTables
-        $(document).ready(function() {
-            $('.datatable').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/ru.json'
-                },
-                pageLength: 25,
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                     '<"row"<"col-sm-12"tr>>' +
-                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                order: [[0, 'desc']]
-            });
-        });
-
-        // Настройка toastr
-        toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "timeOut": "3000"
-        };
-    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

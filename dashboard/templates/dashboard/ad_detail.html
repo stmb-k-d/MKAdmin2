@@ -1,0 +1,640 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .detail-card {
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+    
+    .detail-card .card-header {
+        background: #f8f9fa;
+        font-weight: 600;
+        padding: 15px;
+    }
+    
+    .detail-card .card-body {
+        padding: 20px;
+    }
+    
+    .detail-card h5 {
+        margin-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        color: #343a40;
+    }
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #f3f3f3;
+        padding-bottom: 10px;
+    }
+    
+    .detail-row:last-child {
+        margin-bottom: 0;
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        width: 200px;
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .detail-value {
+        flex: 1;
+        color: #212529;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: 500;
+        margin-top: -3px;
+    }
+    
+    .status-active {
+        background: #28a745;
+        color: white;
+    }
+    
+    .status-paused {
+        background: #ffc107;
+        color: black;
+    }
+    
+    .status-disabled {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .collapse-toggle {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .collapse-toggle i {
+        transition: transform 0.3s ease;
+    }
+    
+    .collapse-toggle.collapsed i {
+        transform: rotate(-90deg);
+    }
+    
+    .statistic-card {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .statistic-item {
+        flex: 1;
+        min-width: 120px;
+        padding: 15px;
+        text-align: center;
+        border-right: 1px solid #f3f3f3;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .statistic-item:last-child {
+        border-right: none;
+    }
+    
+    .statistic-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+    
+    .statistic-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    /* Стили для таблицы статистики по дням */
+    .table-daily-stats {
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .table-daily-stats-container {
+        overflow-x: auto;
+        max-width: 100%;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .table-daily-stats th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        vertical-align: middle;
+        text-align: center;
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table-daily-stats th:hover {
+        background-color: #e9ecef;
+    }
+    
+    .table-daily-stats th.sorted-asc:after {
+        content: '↑';
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #28a745;
+    }
+    
+    .table-daily-stats th.sorted-desc:after {
+        content: '↓';
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #28a745;
+    }
+    
+    .table-daily-stats td {
+        vertical-align: middle;
+        text-align: center;
+    }
+    
+    /* Подсветка строк при наведении */
+    .table-daily-stats tbody tr:hover {
+        background-color: rgba(40, 167, 69, 0.05);
+    }
+    
+    @media (max-width: 768px) {
+        .statistic-item {
+            min-width: 50%;
+            border-right: none;
+            border-bottom: 1px solid #f3f3f3;
+        }
+        
+        .table-daily-stats {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{% url 'dashboard:ads' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Назад к списку объявлений
+            </a>
+        </div>
+    </div>
+    
+    <!-- Верхняя секция: Инфо слева, Расширенная статистика справа -->
+    <div class="row">
+        <!-- Информационный блок слева -->
+        <div class="col-md-6">
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация об объявлении</h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-row">
+                        <div class="detail-label">id_acc_bd</div>
+                        <div class="detail-value">{{ ad.id_acc_bd }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">camp_id</div>
+                        <div class="detail-value">{{ ad.camp_id }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">adset_id</div>
+                        <div class="detail-value">{{ ad.adset_id }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">ad_id</div>
+                        <div class="detail-value">{{ ad.ad_id }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_objective</div>
+                        <div class="detail-value">{{ ad.fb_objective }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge 
+                                {% if ad.fb_effective_status == 'ACTIVE' %}status-active
+                                {% elif ad.fb_effective_status == 'PAUSED' %}status-paused
+                                {% else %}status-disabled{% endif %}">
+                                {{ ad.fb_effective_status }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_status</div>
+                        <div class="detail-value">{{ ad.fb_status }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">kt_campaign_id</div>
+                        <div class="detail-value">{{ ad.kt_campaign_id }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">kt_campaign_name</div>
+                        <div class="detail-value">{{ ad.kt_campaign_name }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">creo_id</div>
+                        <div class="detail-value">{{ ad.creo_id }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">type_optimization</div>
+                        <div class="detail-value">{{ ad.type_optimization|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">install_or_dep</div>
+                        <div class="detail-value">{{ ad.install_or_dep|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">comment</div>
+                        <div class="detail-value">{{ ad.comment|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">live_status</div>
+                        <div class="detail-value">{{ ad.live_status|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">thumbnail_url</div>
+                        <div class="detail-value">
+                            {% if ad.thumbnail_url %}
+                                <a href="{{ ad.thumbnail_url }}" target="_blank">Просмотр</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">geo_buying</div>
+                        <div class="detail-value">{{ ad.geo_buying|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">app_id</div>
+                        <div class="detail-value">{{ ad.app_id|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">last_update_fbt</div>
+                        <div class="detail-value">{{ ad.last_update_fbt|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">last_update_kt</div>
+                        <div class="detail-value">{{ ad.last_update_kt|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Расширенная статистика справа -->
+        <div class="col-md-6">
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Расширенная статистика</h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-row">
+                        <div class="detail-label">fb_quality_score_organic</div>
+                        <div class="detail-value">{{ ad.fb_quality_score_organic|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_quality_score_ectr</div>
+                        <div class="detail-value">{{ ad.fb_quality_score_ectr|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_quality_score_ecvr</div>
+                        <div class="detail-value">{{ ad.fb_quality_score_ecvr|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_video_view</div>
+                        <div class="detail-value">{{ ad.fb_video_view|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_page_engagement</div>
+                        <div class="detail-value">{{ ad.fb_page_engagement|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_post_engagement</div>
+                        <div class="detail-value">{{ ad.fb_post_engagement|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">fb_post_reaction</div>
+                        <div class="detail-value">{{ ad.fb_post_reaction|default:"0" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">name</div>
+                        <div class="detail-value">{{ ad.name|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">type</div>
+                        <div class="detail-value">{{ ad.type|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Блок статистики -->
+    <div class="card detail-card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Статистика</h5>
+        </div>
+        <div class="card-body">
+            <div class="statistic-card">
+                <!-- Первый ряд статистики -->
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_spend</div>
+                    <div class="statistic-value">{{ ad.fb_spend|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_cpm</div>
+                    <div class="statistic-value">{{ ad.fb_cpm|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_impressions</div>
+                    <div class="statistic-value">{{ ad.fb_impressions|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_clicks</div>
+                    <div class="statistic-value">{{ ad.fb_clicks|default:"0" }}</div>
+                </div>
+            </div>
+
+            <div class="statistic-card">
+                <!-- Второй ряд статистики -->
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_ctr</div>
+                    <div class="statistic-value">{{ ad.fb_ctr|default:"0" }}%</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_cpc</div>
+                    <div class="statistic-value">{{ ad.fb_cpc|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_link_click</div>
+                    <div class="statistic-value">{{ ad.fb_link_click|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">fb_cost_per_unique_click</div>
+                    <div class="statistic-value">{{ ad.fb_cost_per_unique_click|default:"0" }}</div>
+                </div>
+            </div>
+
+            <div class="statistic-card">
+                <!-- Третий ряд статистики -->
+                <div class="statistic-item">
+                    <div class="statistic-label">kt_unic_clicks</div>
+                    <div class="statistic-value">{{ ad.kt_unic_clicks|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">c2i</div>
+                    <div class="statistic-value">{{ ad.c2i|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">cr2i</div>
+                    <div class="statistic-value">{{ ad.cr2i|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">cpi</div>
+                    <div class="statistic-value">{{ ad.cpi|default:"0" }}</div>
+                </div>
+            </div>
+
+            <div class="statistic-card">
+                <!-- Четвертый ряд статистики -->
+                <div class="statistic-item">
+                    <div class="statistic-label">regs</div>
+                    <div class="statistic-value">{{ ad.regs|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">cr2r</div>
+                    <div class="statistic-value">{{ ad.cr2r|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">i2r</div>
+                    <div class="statistic-value">{{ ad.i2r|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">cpr</div>
+                    <div class="statistic-value">{{ ad.cpr|default:"0" }}</div>
+                </div>
+            </div>
+
+            <div class="statistic-card">
+                <!-- Пятый ряд статистики -->
+                <div class="statistic-item">
+                    <div class="statistic-label">cr2d</div>
+                    <div class="statistic-value">{{ ad.cr2d|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">r2s</div>
+                    <div class="statistic-value">{{ ad.r2s|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">cps</div>
+                    <div class="statistic-value">{{ ad.cps|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">deps</div>
+                    <div class="statistic-value">{{ ad.deps|default:"0" }}</div>
+                </div>
+            </div>
+
+            <div class="statistic-card">
+                <!-- Шестой ряд статистики -->
+                <div class="statistic-item">
+                    <div class="statistic-label">income</div>
+                    <div class="statistic-value">{{ ad.income|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">bprofit</div>
+                    <div class="statistic-value">{{ ad.bprofit|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <div class="statistic-label">broi</div>
+                    <div class="statistic-value">{{ ad.broi|default:"0" }}</div>
+                </div>
+                <div class="statistic-item">
+                    <!-- Пустой элемент для выравнивания -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок статистики по дням -->
+    <div class="card detail-card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Статистика по дням</h5>
+        </div>
+        <div class="card-body">
+            {% if daily_stats %}
+                <div class="table-daily-stats-container">
+                    <table class="table table-sm table-striped table-hover table-daily-stats">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Дата</th>
+                                <th>Spend</th>
+                                <th>CPM</th>
+                                <th>Impressions</th>
+                                <th>Clicks</th>
+                                <th>CTR</th>
+                                <th>CPC</th>
+                                <th>Link Click</th>
+                                <th>Cost per Unique Click</th>
+                                <th>KT Unic Clicks</th>
+                                <th>C2I</th>
+                                <th>CR2I</th>
+                                <th>CPI</th>
+                                <th>Regs</th>
+                                <th>CR2R</th>
+                                <th>I2R</th>
+                                <th>CPR</th>
+                                <th>CR2D</th>
+                                <th>R2S</th>
+                                <th>CPS</th>
+                                <th>Deps</th>
+                                <th>Income</th>
+                                <th>BProfit</th>
+                                <th>BROI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in daily_stats %}
+                                <tr>
+                                    <td>{{ stat.date_log|date:"d.m.Y" }}</td>
+                                    <td>{{ stat.fb_spend|floatformat:2 }}</td>
+                                    <td>{{ stat.fb_cpm|floatformat:2 }}</td>
+                                    <td>{{ stat.fb_impressions|floatformat:0 }}</td>
+                                    <td>{{ stat.fb_clicks|floatformat:0 }}</td>
+                                    <td>{{ stat.fb_ctr|floatformat:2 }}%</td>
+                                    <td>{{ stat.fb_cpc|floatformat:2 }}</td>
+                                    <td>{{ stat.fb_link_click|floatformat:0 }}</td>
+                                    <td>{{ stat.fb_cost_per_unique_click|floatformat:2 }}</td>
+                                    <td>{{ stat.kt_unic_clicks|floatformat:0 }}</td>
+                                    <td>{{ stat.c2i|floatformat:2 }}</td>
+                                    <td>{{ stat.cr2i|floatformat:2 }}</td>
+                                    <td>{{ stat.cpi|floatformat:2 }}</td>
+                                    <td>{{ stat.regs|floatformat:0 }}</td>
+                                    <td>{{ stat.cr2r|floatformat:2 }}</td>
+                                    <td>{{ stat.i2r|floatformat:2 }}</td>
+                                    <td>{{ stat.cpr|floatformat:2 }}</td>
+                                    <td>{{ stat.cr2d|floatformat:2 }}</td>
+                                    <td>{{ stat.r2s|floatformat:2 }}</td>
+                                    <td>{{ stat.cps|floatformat:2 }}</td>
+                                    <td>{{ stat.deps|floatformat:0 }}</td>
+                                    <td>{{ stat.income|floatformat:2 }}</td>
+                                    <td>{{ stat.bprofit|floatformat:2 }}</td>
+                                    <td>{{ stat.broi|floatformat:2 }}%</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    Нет доступной статистики по дням для этого объявления
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Выравнивание высоты карточек в первом ряду
+        function adjustCardHeights() {
+            var maxHeight = 0;
+            $('.row .detail-card').height('auto');
+            $('.row .detail-card').each(function() {
+                if ($(this).height() > maxHeight) {
+                    maxHeight = $(this).height();
+                }
+            });
+            $('.row .detail-card').height(maxHeight);
+        }
+        
+        // Сортировка таблицы статистики по дням
+        $('.table-daily-stats thead th').click(function() {
+            var table = $(this).parents('table').eq(0);
+            var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()));
+            this.asc = !this.asc;
+            if (!this.asc) {
+                rows = rows.reverse();
+            }
+            
+            // Удаляем старые строки и добавляем новые отсортированные
+            for (var i = 0; i < rows.length; i++) {
+                table.append(rows[i]);
+            }
+            
+            // Убираем все индикаторы сортировки и добавляем к текущей колонке
+            table.find('th').removeClass('sorted-asc sorted-desc');
+            $(this).addClass(this.asc ? 'sorted-asc' : 'sorted-desc');
+        });
+        
+        // Функция сравнения для сортировки
+        function comparer(index) {
+            return function(a, b) {
+                var valA = getCellValue(a, index);
+                var valB = getCellValue(b, index);
+                
+                // Если это первая колонка (дата)
+                if (index === 0) {
+                    // Парсим дату в формате DD.MM.YYYY
+                    var dateParts1 = valA.split('.');
+                    var dateParts2 = valB.split('.');
+                    
+                    // Создаем дату в формате YYYY-MM-DD для корректного сравнения
+                    var dateA = new Date(dateParts1[2], dateParts1[1] - 1, dateParts1[0]);
+                    var dateB = new Date(dateParts2[2], dateParts2[1] - 1, dateParts2[0]);
+                    
+                    return dateA - dateB;
+                }
+                
+                // Для остальных колонок пробуем преобразовать в числа
+                var valANum = parseFloat(valA.replace(/[^\d.-]/g, ''));
+                var valBNum = parseFloat(valB.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(valANum) && !isNaN(valBNum)) {
+                    return valANum - valBNum;
+                } else {
+                    return valA.localeCompare(valB);
+                }
+            };
+        }
+        
+        // Получение значения ячейки
+        function getCellValue(row, index) {
+            return $(row).children('td').eq(index).text().trim();
+        }
+        
+        // Вызываем при загрузке и изменении размера окна
+        adjustCardHeights();
+        $(window).resize(adjustCardHeights);
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,311 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Ads{% endblock %}
+
+{% block page_title %}Объявления{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Основной контейнер с прокруткой */
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+    
+    /* Основные стили таблицы */
+    #adsTable {
+        font-size: 0.65rem;
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    
+    /* Ячейки таблицы */
+    #adsTable th, 
+    #adsTable td {
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 3px;
+        border: 1px solid #dee2e6;
+    }
+    
+    /* Заголовки */
+    #adsTable th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    /* Строки */
+    #adsTable tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    #adsTable tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Выделенная строка - используем явный селектор */
+    #adsTable tbody tr.highlighted {
+        background-color: rgba(40, 167, 69, 0.15) !important;
+    }
+    
+    /* Стили для сортировки */
+    #adsTable th.sorting {
+        cursor: pointer;
+        position: relative;
+    }
+    
+    #adsTable th.sorting:after {
+        content: '↕';
+        position: absolute;
+        right: 5px;
+        opacity: 0.5;
+    }
+    
+    #adsTable th.sorting_asc:after {
+        content: '↓';
+        opacity: 1;
+    }
+    
+    #adsTable th.sorting_desc:after {
+        content: '↑';
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Управление креативами</h5>
+        <div>
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-container">
+            <table id="adsTable" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>id acc bd</th>
+                        <th>ad id</th>
+                        <th>fb effective status</th>
+                        <th>fb status</th>
+                        <th>kt campaign id</th>
+                        <th>kt campaign name</th>
+                        <th>fb spend</th>
+                        <th>cpi</th>
+                        <th>regs</th>
+                        <th>cpr</th>
+                        <th>deps</th>
+                        <th>cps</th>
+                        <th>income</th>
+                        <th>bprofit</th>
+                        <th>broi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ad in ads %}
+                    <tr onclick="highlightRow(this, event)">
+                        <td>{{ ad.id_acc_bd }}</td>
+                        <td><a href="{% url 'dashboard:ad_detail' ad_id=ad.ad_id %}" class="text-primary">{{ ad.ad_id }}</a></td>
+                        <td>
+                            <span class="badge {% if ad.fb_effective_status == 'ACTIVE' %}bg-success{% elif ad.fb_effective_status == 'PAUSED' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ ad.fb_effective_status }}
+                            </span>
+                        </td>
+                        <td>{{ ad.fb_status }}</td>
+                        <td>{{ ad.kt_campaign_id }}</td>
+                        <td>{{ ad.kt_campaign_name }}</td>
+                        <td>{{ ad.fb_spend|default:"0" }}</td>
+                        <td>{{ ad.cpi|default:"0" }}</td>
+                        <td>{{ ad.regs|default:"0" }}</td>
+                        <td>{{ ad.cpr|default:"0" }}</td>
+                        <td>{{ ad.deps|default:"0" }}</td>
+                        <td>{{ ad.cps|default:"0" }}</td>
+                        <td>{{ ad.income|default:"0" }}</td>
+                        <td>{{ ad.bprofit|default:"0" }}</td>
+                        <td>{{ ad.broi|default:"0" }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для выделения строк - добавляем напрямую -->
+<script>
+function highlightRow(row, event) {
+    // Проверяем, что клик не на ссылку или span внутри ячейки
+    if (event.target.tagName.toLowerCase() === 'a' || 
+        event.target.parentElement.tagName.toLowerCase() === 'a') {
+        return;
+    }
+    
+    // Проверяем, выделена ли уже строка
+    if (row.style.backgroundColor === 'rgba(40, 167, 69, 0.15)') {
+        // Если строка выделена, снимаем выделение
+        row.style.backgroundColor = '';
+    } else {
+        // Снимаем выделение со всех строк
+        var rows = document.querySelectorAll('#adsTable tbody tr');
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].style.backgroundColor = '';
+        }
+        
+        // Выделяем текущую строку
+        row.style.backgroundColor = 'rgba(40, 167, 69, 0.15)';
+    }
+}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Проверка работы jQuery
+        console.log("jQuery готов!");
+        
+        // Устанавливаем оптимальную ширину для колонок
+        setOptimalColumnWidths();
+        
+        // Функция для простого поиска
+        $("#searchInput").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#adsTable tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        
+        // Функция сортировки для таблицы
+        $('th').click(function() {
+            var table = $(this).parents('table').eq(0);
+            var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()));
+            this.asc = !this.asc;
+            if (!this.asc) {
+                rows = rows.reverse();
+            }
+            
+            // Сначала удаляем класс сортировки со всех заголовков
+            table.find('th').removeClass('sorting_asc sorting_desc sorting');
+            
+            // Добавляем класс сортировки на текущий заголовок
+            $(this).addClass(this.asc ? 'sorting_asc' : 'sorting_desc');
+            
+            // Добавляем отсортированные строки
+            for (var i = 0; i < rows.length; i++) {
+                table.append(rows[i]);
+            }
+        });
+        
+        // Функция сравнения для сортировки
+        function comparer(index) {
+            return function(a, b) {
+                var valA = getCellValue(a, index);
+                var valB = getCellValue(b, index);
+                
+                // Пробуем сортировать как числа
+                if (!isNaN(valA) && !isNaN(valB)) {
+                    return valA - valB;
+                }
+                
+                return valA.localeCompare(valB);
+            };
+        }
+        
+        // Получение значения ячейки
+        function getCellValue(row, index) {
+            var text = $(row).children('td').eq(index).text();
+            return text.trim();
+        }
+        
+        // Добавляем класс сортировки на все заголовки
+        $('th').addClass('sorting');
+        
+        // Функция для определения оптимальной ширины колонок
+        function setOptimalColumnWidths() {
+            // Создаем скрытый элемент для измерения текста
+            var $measure = $('<div>').css({
+                position: 'absolute',
+                visibility: 'hidden',
+                whiteSpace: 'nowrap',
+                fontFamily: $('#adsTable').css('font-family'),
+                fontSize: $('#adsTable').css('font-size')
+            }).appendTo('body');
+            
+            // Расчет общей ширины экрана и количества колонок
+            var totalWidth = $('.table-container').width() - 30; // Вычитаем отступы
+            var columnCount = $('#adsTable th').length;
+            var avgColumnWidth = Math.floor(totalWidth / columnCount);
+            
+            // Проходим по всем колонкам
+            $('#adsTable thead th').each(function(columnIndex) {
+                var headerText = $(this).text();
+                var maxWidth = 0;
+                
+                // Измеряем ширину заголовка
+                $measure.text(headerText);
+                var headerWidth = $measure.width() + 20; // Добавляем отступ для сортировки
+                
+                // Определяем итоговую ширину
+                maxWidth = headerWidth;
+                
+                // Задаем ширину в зависимости от типа данных колонки
+                if (/id acc bd/.test(headerText)) {
+                    maxWidth = 70;
+                } else if (/ad id/.test(headerText)) {
+                    maxWidth = 120;
+                } else if (/effective status/.test(headerText)) {
+                    maxWidth = 90;
+                } else if (/fb status/.test(headerText)) {
+                    maxWidth = 60;
+                } else if (/kt campaign id/.test(headerText)) {
+                    maxWidth = 90;
+                } else if (/kt campaign name/.test(headerText)) {
+                    maxWidth = 120;
+                } else if (/(spend|cpi|cpr|cps|income|profit)/.test(headerText)) {
+                    maxWidth = 60;
+                } else if (/(regs|deps)/.test(headerText)) {
+                    maxWidth = 50;
+                } else if (/(broi)/.test(headerText)) {
+                    maxWidth = 50;
+                } else {
+                    // Для остальных колонок используем среднее значение
+                    maxWidth = avgColumnWidth;
+                }
+                
+                // Ограничиваем максимальную ширину
+                maxWidth = Math.min(maxWidth, 180);
+                
+                // Устанавливаем рассчитанную ширину
+                var thSelector = '#adsTable th:nth-child(' + (columnIndex + 1) + ')';
+                var tdSelector = '#adsTable td:nth-child(' + (columnIndex + 1) + ')';
+                
+                $(thSelector + ', ' + tdSelector).css({
+                    'width': maxWidth + 'px',
+                    'min-width': maxWidth + 'px',
+                    'max-width': maxWidth + 'px'
+                });
+            });
+            
+            // Удаляем измерительный элемент
+            $measure.remove();
+        }
+        
+        // Пересчитываем ширину колонок при изменении размера окна
+        $(window).resize(function() {
+            setOptimalColumnWidths();
+        });
+    });
+</script>
+{% endblock %} 
