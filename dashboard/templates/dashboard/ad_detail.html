@@ -366,19 +366,19 @@
                 <!-- Первый ряд статистики -->
                 <div class="statistic-item">
                     <div class="statistic-label">fb_spend</div>
-                    <div class="statistic-value">{{ ad.fb_spend|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_spend|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">fb_cpm</div>
-                    <div class="statistic-value">{{ ad.fb_cpm|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_cpm|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">fb_impressions</div>
-                    <div class="statistic-value">{{ ad.fb_impressions|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_impressions|default:"0"|floatformat:0 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">fb_clicks</div>
-                    <div class="statistic-value">{{ ad.fb_clicks|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_clicks|default:"0"|floatformat:0 }}</div>
                 </div>
             </div>
 
@@ -386,19 +386,19 @@
                 <!-- Второй ряд статистики -->
                 <div class="statistic-item">
                     <div class="statistic-label">fb_ctr</div>
-                    <div class="statistic-value">{{ ad.fb_ctr|default:"0" }}%</div>
+                    <div class="statistic-value">{{ ad.fb_ctr|default:"0"|floatformat:2 }}%</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">fb_cpc</div>
-                    <div class="statistic-value">{{ ad.fb_cpc|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_cpc|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">fb_link_click</div>
-                    <div class="statistic-value">{{ ad.fb_link_click|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_link_click|default:"0"|floatformat:0 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">fb_cost_per_unique_click</div>
-                    <div class="statistic-value">{{ ad.fb_cost_per_unique_click|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.fb_cost_per_unique_click|default:"0"|floatformat:2 }}</div>
                 </div>
             </div>
 
@@ -406,19 +406,19 @@
                 <!-- Третий ряд статистики -->
                 <div class="statistic-item">
                     <div class="statistic-label">kt_unic_clicks</div>
-                    <div class="statistic-value">{{ ad.kt_unic_clicks|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.kt_unic_clicks|default:"0"|floatformat:0 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">c2i</div>
-                    <div class="statistic-value">{{ ad.c2i|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.c2i|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">cr2i</div>
-                    <div class="statistic-value">{{ ad.cr2i|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.cr2i|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">cpi</div>
-                    <div class="statistic-value">{{ ad.cpi|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.cpi|default:"0"|floatformat:2 }}</div>
                 </div>
             </div>
 
@@ -426,19 +426,19 @@
                 <!-- Четвертый ряд статистики -->
                 <div class="statistic-item">
                     <div class="statistic-label">regs</div>
-                    <div class="statistic-value">{{ ad.regs|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.regs|default:"0"|floatformat:0 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">cr2r</div>
-                    <div class="statistic-value">{{ ad.cr2r|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.cr2r|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">i2r</div>
-                    <div class="statistic-value">{{ ad.i2r|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.i2r|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">cpr</div>
-                    <div class="statistic-value">{{ ad.cpr|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.cpr|default:"0"|floatformat:2 }}</div>
                 </div>
             </div>
 
@@ -446,19 +446,19 @@
                 <!-- Пятый ряд статистики -->
                 <div class="statistic-item">
                     <div class="statistic-label">cr2d</div>
-                    <div class="statistic-value">{{ ad.cr2d|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.cr2d|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">r2s</div>
-                    <div class="statistic-value">{{ ad.r2s|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.r2s|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">cps</div>
-                    <div class="statistic-value">{{ ad.cps|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.cps|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">deps</div>
-                    <div class="statistic-value">{{ ad.deps|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.deps|default:"0"|floatformat:0 }}</div>
                 </div>
             </div>
 
@@ -466,15 +466,15 @@
                 <!-- Шестой ряд статистики -->
                 <div class="statistic-item">
                     <div class="statistic-label">income</div>
-                    <div class="statistic-value">{{ ad.income|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.income|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">bprofit</div>
-                    <div class="statistic-value">{{ ad.bprofit|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.bprofit|default:"0"|floatformat:2 }}</div>
                 </div>
                 <div class="statistic-item">
                     <div class="statistic-label">broi</div>
-                    <div class="statistic-value">{{ ad.broi|default:"0" }}</div>
+                    <div class="statistic-value">{{ ad.broi|default:"0"|floatformat:2 }}%</div>
                 </div>
                 <div class="statistic-item">
                     <!-- Пустой элемент для выравнивания -->

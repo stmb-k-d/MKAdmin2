@@ -100,7 +100,7 @@
                         <th>ad id</th>
                         <th>fb effective status</th>
                         <th>fb status</th>
-                        <th>kt campaign id</th>
+                        <th>last update fbt</th>
                         <th>kt campaign name</th>
                         <th>fb spend</th>
                         <th>cpi</th>
@@ -124,17 +124,17 @@
                             </span>
                         </td>
                         <td>{{ ad.fb_status }}</td>
-                        <td>{{ ad.kt_campaign_id }}</td>
+                        <td>{{ ad.last_update_fbt|date:"d.m.Y H:i"|default:"-" }}</td>
                         <td>{{ ad.kt_campaign_name }}</td>
-                        <td>{{ ad.fb_spend|default:"0" }}</td>
-                        <td>{{ ad.cpi|default:"0" }}</td>
-                        <td>{{ ad.regs|default:"0" }}</td>
-                        <td>{{ ad.cpr|default:"0" }}</td>
-                        <td>{{ ad.deps|default:"0" }}</td>
-                        <td>{{ ad.cps|default:"0" }}</td>
-                        <td>{{ ad.income|default:"0" }}</td>
-                        <td>{{ ad.bprofit|default:"0" }}</td>
-                        <td>{{ ad.broi|default:"0" }}%</td>
+                        <td>{{ ad.fb_spend|default:"0"|floatformat:2 }}</td>
+                        <td>{{ ad.cpi|default:"0"|floatformat:2 }}</td>
+                        <td>{{ ad.regs|default:"0"|floatformat:0 }}</td>
+                        <td>{{ ad.cpr|default:"0"|floatformat:2 }}</td>
+                        <td>{{ ad.deps|default:"0"|floatformat:0 }}</td>
+                        <td>{{ ad.cps|default:"0"|floatformat:2 }}</td>
+                        <td>{{ ad.income|default:"0"|floatformat:2 }}</td>
+                        <td>{{ ad.bprofit|default:"0"|floatformat:2 }}</td>
+                        <td>{{ ad.broi|default:"0"|floatformat:2 }}%</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -269,8 +269,8 @@ function highlightRow(row, event) {
                     maxWidth = 90;
                 } else if (/fb status/.test(headerText)) {
                     maxWidth = 60;
-                } else if (/kt campaign id/.test(headerText)) {
-                    maxWidth = 90;
+                } else if (/last update fbt/.test(headerText)) {
+                    maxWidth = 120;
                 } else if (/kt campaign name/.test(headerText)) {
                     maxWidth = 120;
                 } else if (/(spend|cpi|cpr|cps|income|profit)/.test(headerText)) {
