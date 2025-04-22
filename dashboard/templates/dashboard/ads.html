@@ -53,7 +53,7 @@
         background-color: rgba(0, 0, 0, 0.05);
     }
     
-    /* Выделенная строка - используем явный селектор */
+    /* Выделенная строка */
     #adsTable tbody tr.highlighted {
         background-color: rgba(40, 167, 69, 0.15) !important;
     }
@@ -80,70 +80,128 @@
         content: '↑';
         opacity: 1;
     }
+    
+    /* Стили для модального окна выбора колонок */
+    .column-selection-modal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .column-selection-container {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .column-checkbox-container {
+        padding: 8px;
+        margin-bottom: 5px;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        background-color: #f8f9fa;
+    }
+    
+    .column-checkbox-container:hover {
+        background-color: #e9ecef;
+    }
+    
+    .column-checkbox-container .drag-handle {
+        cursor: move;
+        margin-right: 10px;
+        color: #6c757d;
+    }
+    
+    .column-checkbox-container .form-check {
+        margin-bottom: 0;
+        flex-grow: 1;
+    }
+    
+    /* Стиль для перетаскиваемого элемента */
+    .column-checkbox-container.dragging {
+        opacity: 0.5;
+        border: 1px dashed #0d6efd;
+    }
+    
+    /* Кнопки управления колонками */
+    .column-buttons {
+        margin-left: 10px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Управление креативами</h5>
-        <div>
-            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3">Управление креативами</h5>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="showActiveOnly" role="switch">
+                <label class="form-check-label" for="showActiveOnly">Активные</label>
+            </div>
+        </div>
+        <div class="d-flex">
+            <div class="column-buttons">
+                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
+                    <i class="fas fa-columns"></i> Настроить колонки
+                </button>
+            </div>
+            <div class="ms-2">
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
+            </div>
         </div>
     </div>
     <div class="card-body p-0">
         <div class="table-container">
             <table id="adsTable" class="table table-bordered">
                 <thead>
-                    <tr>
-                        <th>id acc bd</th>
-                        <th>ad id</th>
-                        <th>fb effective status</th>
-                        <th>fb status</th>
-                        <th>last update fbt</th>
-                        <th>kt campaign name</th>
-                        <th>fb spend</th>
-                        <th>cpi</th>
-                        <th>regs</th>
-                        <th>cpr</th>
-                        <th>deps</th>
-                        <th>cps</th>
-                        <th>income</th>
-                        <th>bprofit</th>
-                        <th>broi</th>
+                    <tr id="tableHeader">
+                        <!-- Заголовки будут добавлены динамически через JavaScript -->
                     </tr>
                 </thead>
-                <tbody>
-                    {% for ad in ads %}
-                    <tr onclick="highlightRow(this, event)">
-                        <td>{{ ad.id_acc_bd }}</td>
-                        <td><a href="{% url 'dashboard:ad_detail' ad_id=ad.ad_id %}" class="text-primary">{{ ad.ad_id }}</a></td>
-                        <td>
-                            <span class="badge {% if ad.fb_effective_status == 'ACTIVE' %}bg-success{% elif ad.fb_effective_status == 'PAUSED' %}bg-warning{% else %}bg-secondary{% endif %}">
-                                {{ ad.fb_effective_status }}
-                            </span>
-                        </td>
-                        <td>{{ ad.fb_status }}</td>
-                        <td>{{ ad.last_update_fbt|date:"d.m.Y H:i"|default:"-" }}</td>
-                        <td>{{ ad.kt_campaign_name }}</td>
-                        <td>{{ ad.fb_spend|default:"0"|floatformat:2 }}</td>
-                        <td>{{ ad.cpi|default:"0"|floatformat:2 }}</td>
-                        <td>{{ ad.regs|default:"0"|floatformat:0 }}</td>
-                        <td>{{ ad.cpr|default:"0"|floatformat:2 }}</td>
-                        <td>{{ ad.deps|default:"0"|floatformat:0 }}</td>
-                        <td>{{ ad.cps|default:"0"|floatformat:2 }}</td>
-                        <td>{{ ad.income|default:"0"|floatformat:2 }}</td>
-                        <td>{{ ad.bprofit|default:"0"|floatformat:2 }}</td>
-                        <td>{{ ad.broi|default:"0"|floatformat:2 }}%</td>
-                    </tr>
-                    {% endfor %}
+                <tbody id="tableBody">
+                    <!-- Строки будут добавлены динамически через JavaScript -->
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Скрипт для выделения строк - добавляем напрямую -->
+<!-- Модальное окно для выбора колонок -->
+<div class="modal fade column-selection-modal" id="columnSelectionModal" tabindex="-1" aria-labelledby="columnSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="columnSelectionModalLabel">Выбор отображаемых колонок</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <small>Перетащите элементы, чтобы изменить порядок колонок в таблице.</small>
+                </div>
+                <div class="mb-3 d-flex">
+                    <div class="form-check form-switch me-3">
+                        <input class="form-check-input" type="checkbox" id="selectAllColumns">
+                        <label class="form-check-label" for="selectAllColumns">Выбрать все колонки</label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="resetToDefaultColumns">Сбросить</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="saveAsDefaultColumns">Сохранить как шаблон</button>
+                    </div>
+                </div>
+                <div class="column-selection-container" id="columnCheckboxes">
+                    <!-- Чекбоксы для колонок будут добавлены динамически через JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveColumnSelection" data-bs-dismiss="modal">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для выделения строк -->
 <script>
 function highlightRow(row, event) {
     // Проверяем, что клик не на ссылку или span внутри ячейки
@@ -153,18 +211,16 @@ function highlightRow(row, event) {
     }
     
     // Проверяем, выделена ли уже строка
-    if (row.style.backgroundColor === 'rgba(40, 167, 69, 0.15)') {
+    if (row.classList.contains('highlighted')) {
         // Если строка выделена, снимаем выделение
-        row.style.backgroundColor = '';
+        row.classList.remove('highlighted');
     } else {
         // Снимаем выделение со всех строк
-        var rows = document.querySelectorAll('#adsTable tbody tr');
-        for (var i = 0; i < rows.length; i++) {
-            rows[i].style.backgroundColor = '';
-        }
+        const rows = document.querySelectorAll('#adsTable tbody tr');
+        rows.forEach(r => r.classList.remove('highlighted'));
         
         // Выделяем текущую строку
-        row.style.backgroundColor = 'rgba(40, 167, 69, 0.15)';
+        row.classList.add('highlighted');
     }
 }
 </script>
@@ -172,140 +228,442 @@ function highlightRow(row, event) {
 
 {% block extra_js %}
 <script>
-    $(document).ready(function() {
-        // Проверка работы jQuery
-        console.log("jQuery готов!");
+$(document).ready(function() {
+    // Подготовим данные для таблицы
+    const adsData = [];
+    {% for ad in ads %}
+    adsData.push({
+        {% for key, value in ad.items %}
+        "{{ key }}": {% if value != None %}"{{ value|escapejs }}"{% else %}null{% endif %},
+        {% endfor %}
+    });
+    {% endfor %}
+    
+    // Загружаем все доступные колонки
+    const allColumns = JSON.parse('{{ all_columns|escapejs }}');
+    console.log("Доступные колонки:", allColumns);
+    
+    // Изначально выбранные колонки по умолчанию
+    const initialDefaultColumns = [
+        'id_acc_bd', 'ad_id', 'fb_effective_status', 'fb_status', 
+        'last_update_fbt', 'kt_campaign_name', 'fb_spend', 'cpi', 
+        'regs', 'cpr', 'deps', 'cps', 'income', 'bprofit', 'broi'
+    ];
+    
+    // Получаем пользовательский шаблон колонок
+    let userDefaultColumns;
+    try {
+        const savedDefaultJSON = localStorage.getItem('adsTableDefaultColumns');
+        if (savedDefaultJSON) {
+            userDefaultColumns = JSON.parse(savedDefaultJSON);
+        } else {
+            userDefaultColumns = initialDefaultColumns;
+        }
+    } catch (e) {
+        console.error('Ошибка при загрузке шаблона колонок:', e);
+        userDefaultColumns = initialDefaultColumns;
+    }
+    
+    // Загружаем сохраненные колонки или используем шаблон
+    let selectedColumns;
+    try {
+        const savedColumnsJSON = localStorage.getItem('adsTableColumns');
+        if (savedColumnsJSON) {
+            selectedColumns = JSON.parse(savedColumnsJSON);
+            if (!selectedColumns || selectedColumns.length === 0) {
+                selectedColumns = userDefaultColumns;
+            }
+        } else {
+            selectedColumns = userDefaultColumns;
+        }
+    } catch (e) {
+        console.error('Ошибка при загрузке сохраненных колонок:', e);
+        selectedColumns = userDefaultColumns;
+    }
+    
+    console.log("Выбранные колонки:", selectedColumns);
+    
+    // Переменная для хранения состояния фильтра активных объявлений
+    let showActiveOnly = false;
+    
+    // Функция для форматирования значений в ячейках
+    function formatCellValue(column, value) {
+        if (value === null || value === undefined || value === '') {
+            return '-';
+        }
         
-        // Устанавливаем оптимальную ширину для колонок
-        setOptimalColumnWidths();
+        // Специальное форматирование для конкретных колонок
+        if (column === 'ad_id') {
+            return '<a href="/ad/' + value + '/" class="text-primary">' + value + '</a>';
+        } else if (column === 'fb_effective_status') {
+            let badgeClass = 'bg-secondary';
+            if (value === 'ACTIVE') {
+                badgeClass = 'bg-success';
+            } else if (value === 'PAUSED') {
+                badgeClass = 'bg-warning';
+            }
+            return '<span class="badge ' + badgeClass + '">' + value + '</span>';
+        } else if (column.includes('date') || column.includes('update')) {
+            // Форматирование дат
+            try {
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return day + '.' + month + '.' + year + ' ' + hours + ':' + minutes;
+                }
+            } catch (e) {}
+            return value;
+        } else if (['fb_spend', 'cpi', 'cpr', 'cps', 'income', 'bprofit'].includes(column)) {
+            // Форматирование чисел с плавающей точкой
+            return parseFloat(value).toFixed(2);
+        } else if (column === 'broi') {
+            // Форматирование процентов
+            return parseFloat(value).toFixed(2) + '%';
+        } else if (['regs', 'deps'].includes(column)) {
+            // Форматирование целых чисел
+            return parseInt(value);
+        }
         
-        // Функция для простого поиска
-        $("#searchInput").on("keyup", function() {
-            var value = $(this).val().toLowerCase();
-            $("#adsTable tbody tr").filter(function() {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-            });
+        return value;
+    }
+    
+    // Функция для отрисовки таблицы
+    function renderTable() {
+        const headerRow = $('#tableHeader');
+        const tableBody = $('#tableBody');
+        
+        // Очищаем содержимое
+        headerRow.empty();
+        tableBody.empty();
+        
+        // Добавляем заголовки колонок
+        selectedColumns.forEach(function(column) {
+            const th = $('<th>')
+                .addClass('sorting')
+                .text(column);
+            headerRow.append(th);
         });
         
-        // Функция сортировки для таблицы
-        $('th').click(function() {
-            var table = $(this).parents('table').eq(0);
-            var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()));
-            this.asc = !this.asc;
-            if (!this.asc) {
-                rows = rows.reverse();
-            }
+        // Фильтруем данные, если установлен фильтр "Активные"
+        const filteredData = showActiveOnly 
+            ? adsData.filter(ad => ad.fb_effective_status === 'ACTIVE')
+            : adsData;
+        
+        // Добавляем строки с данными
+        filteredData.forEach(function(ad) {
+            const tr = $('<tr>').attr('onclick', 'highlightRow(this, event)');
             
-            // Сначала удаляем класс сортировки со всех заголовков
-            table.find('th').removeClass('sorting_asc sorting_desc sorting');
+            selectedColumns.forEach(function(column) {
+                const td = $('<td>');
+                td.html(formatCellValue(column, ad[column]));
+                tr.append(td);
+            });
+            
+            tableBody.append(tr);
+        });
+        
+        // Инициализируем сортировку
+        initTableSorting();
+    }
+    
+    // Функция для инициализации сортировки
+    function initTableSorting() {
+        $('#adsTable th').off('click').click(function() {
+            const table = $(this).parents('table').eq(0);
+            const index = $(this).index();
+            const isAsc = !$(this).hasClass('sorting_asc');
+            
+            // Удаляем классы сортировки со всех заголовков
+            table.find('th').removeClass('sorting_asc sorting_desc');
             
             // Добавляем класс сортировки на текущий заголовок
-            $(this).addClass(this.asc ? 'sorting_asc' : 'sorting_desc');
+            $(this).addClass(isAsc ? 'sorting_asc' : 'sorting_desc');
+            
+            // Сортируем строки
+            const rows = table.find('tbody tr').toArray().sort(function(a, b) {
+                const valA = $(a).find('td').eq(index).text().trim();
+                const valB = $(b).find('td').eq(index).text().trim();
+                
+                // Пробуем сортировать как числа
+                const numA = parseFloat(valA.replace(/[^\d.-]/g, ''));
+                const numB = parseFloat(valB.replace(/[^\d.-]/g, ''));
+                
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return isAsc ? numA - numB : numB - numA;
+                }
+                
+                return isAsc 
+                    ? valA.localeCompare(valB) 
+                    : valB.localeCompare(valA);
+            });
             
             // Добавляем отсортированные строки
-            for (var i = 0; i < rows.length; i++) {
-                table.append(rows[i]);
+            $.each(rows, function(i, row) {
+                table.children('tbody').append(row);
+            });
+        });
+    }
+    
+    // Заполняем чекбоксы в модальном окне с возможностью перетаскивания
+    function populateColumnCheckboxes() {
+        const container = $('#columnCheckboxes');
+        container.empty();
+        
+        // Создаем массив объектов для всех колонок
+        const columnsData = allColumns.map(function(column) {
+            return {
+                name: column,
+                selected: selectedColumns.includes(column),
+                order: selectedColumns.indexOf(column) === -1 ? 9999 : selectedColumns.indexOf(column)
+            };
+        });
+        
+        // Сортируем колонки: сначала выбранные в нужном порядке, затем остальные
+        columnsData.sort(function(a, b) {
+            if (a.selected && !b.selected) return -1;
+            if (!a.selected && b.selected) return 1;
+            return a.order - b.order;
+        });
+        
+        // Добавляем чекбоксы
+        columnsData.forEach(function(columnData) {
+            const div = $('<div>')
+                .addClass('column-checkbox-container')
+                .attr('data-column', columnData.name);
+            
+            // Добавляем иконку для перетаскивания
+            const dragHandle = $('<span>')
+                .addClass('drag-handle')
+                .html('<i class="fas fa-grip-vertical"></i>');
+            
+            const formCheck = $('<div>').addClass('form-check');
+            
+            const input = $('<input>')
+                .addClass('form-check-input column-checkbox')
+                .attr('type', 'checkbox')
+                .attr('id', 'column-' + columnData.name)
+                .attr('value', columnData.name)
+                .prop('checked', columnData.selected);
+            
+            // Добавляем обработчик изменения состояния чекбокса
+            input.on('change', function() {
+                // Если чекбокс отмечен, перемещаем его наверх списка
+                if ($(this).prop('checked')) {
+                    moveCheckboxToTop($(this).val());
+                }
+            });
+            
+            const label = $('<label>')
+                .addClass('form-check-label')
+                .attr('for', 'column-' + columnData.name)
+                .text(columnData.name);
+            
+            formCheck.append(input, label);
+            div.append(dragHandle, formCheck);
+            container.append(div);
+        });
+        
+        // Устанавливаем состояние чекбокса "Выбрать все"
+        $('#selectAllColumns').prop('checked', allColumns.length === selectedColumns.length);
+        
+        // Инициализируем возможность перетаскивания
+        initDragAndDrop();
+    }
+    
+    // Функция для перемещения выбранного чекбокса вверх списка
+    function moveCheckboxToTop(columnName) {
+        const columnContainers = $('#columnCheckboxes .column-checkbox-container');
+        const container = $('#columnCheckboxes');
+        
+        // Находим последний отмеченный элемент (перед первым неотмеченным)
+        let lastCheckedIndex = -1;
+        columnContainers.each(function(index) {
+            const isChecked = $(this).find('.column-checkbox').prop('checked');
+            if (!isChecked && lastCheckedIndex === -1) {
+                lastCheckedIndex = index - 1;
+                return false;
             }
         });
         
-        // Функция сравнения для сортировки
-        function comparer(index) {
-            return function(a, b) {
-                var valA = getCellValue(a, index);
-                var valB = getCellValue(b, index);
-                
-                // Пробуем сортировать как числа
-                if (!isNaN(valA) && !isNaN(valB)) {
-                    return valA - valB;
-                }
-                
-                return valA.localeCompare(valB);
-            };
+        // Если все элементы отмечены или нет отмеченных, используем 0 или последний индекс
+        if (lastCheckedIndex === -1) {
+            const allChecked = columnContainers.first().find('.column-checkbox').prop('checked');
+            lastCheckedIndex = allChecked ? columnContainers.length - 1 : 0;
         }
         
-        // Получение значения ячейки
-        function getCellValue(row, index) {
-            var text = $(row).children('td').eq(index).text();
-            return text.trim();
+        // Находим элемент для перемещения
+        const elementToMove = columnContainers.filter(function() {
+            return $(this).attr('data-column') === columnName;
+        });
+        
+        // Перемещаем элемент после последнего выбранного или в начало списка
+        if (lastCheckedIndex >= 0) {
+            if (lastCheckedIndex >= columnContainers.length - 1) {
+                // Если это последний элемент, добавляем в конец
+                container.append(elementToMove);
+            } else {
+                // Иначе вставляем после последнего отмеченного элемента
+                elementToMove.insertAfter(columnContainers.eq(lastCheckedIndex));
+            }
+        } else {
+            // Если нет отмеченных элементов, помещаем в начало
+            container.prepend(elementToMove);
         }
+    }
+    
+    // Инициализация перетаскивания для изменения порядка колонок
+    function initDragAndDrop() {
+        const columnItems = document.querySelectorAll('.column-checkbox-container');
+        let draggedItem = null;
         
-        // Добавляем класс сортировки на все заголовки
-        $('th').addClass('sorting');
-        
-        // Функция для определения оптимальной ширины колонок
-        function setOptimalColumnWidths() {
-            // Создаем скрытый элемент для измерения текста
-            var $measure = $('<div>').css({
-                position: 'absolute',
-                visibility: 'hidden',
-                whiteSpace: 'nowrap',
-                fontFamily: $('#adsTable').css('font-family'),
-                fontSize: $('#adsTable').css('font-size')
-            }).appendTo('body');
-            
-            // Расчет общей ширины экрана и количества колонок
-            var totalWidth = $('.table-container').width() - 30; // Вычитаем отступы
-            var columnCount = $('#adsTable th').length;
-            var avgColumnWidth = Math.floor(totalWidth / columnCount);
-            
-            // Проходим по всем колонкам
-            $('#adsTable thead th').each(function(columnIndex) {
-                var headerText = $(this).text();
-                var maxWidth = 0;
-                
-                // Измеряем ширину заголовка
-                $measure.text(headerText);
-                var headerWidth = $measure.width() + 20; // Добавляем отступ для сортировки
-                
-                // Определяем итоговую ширину
-                maxWidth = headerWidth;
-                
-                // Задаем ширину в зависимости от типа данных колонки
-                if (/id acc bd/.test(headerText)) {
-                    maxWidth = 70;
-                } else if (/ad id/.test(headerText)) {
-                    maxWidth = 120;
-                } else if (/effective status/.test(headerText)) {
-                    maxWidth = 90;
-                } else if (/fb status/.test(headerText)) {
-                    maxWidth = 60;
-                } else if (/last update fbt/.test(headerText)) {
-                    maxWidth = 120;
-                } else if (/kt campaign name/.test(headerText)) {
-                    maxWidth = 120;
-                } else if (/(spend|cpi|cpr|cps|income|profit)/.test(headerText)) {
-                    maxWidth = 60;
-                } else if (/(regs|deps)/.test(headerText)) {
-                    maxWidth = 50;
-                } else if (/(broi)/.test(headerText)) {
-                    maxWidth = 50;
-                } else {
-                    // Для остальных колонок используем среднее значение
-                    maxWidth = avgColumnWidth;
-                }
-                
-                // Ограничиваем максимальную ширину
-                maxWidth = Math.min(maxWidth, 180);
-                
-                // Устанавливаем рассчитанную ширину
-                var thSelector = '#adsTable th:nth-child(' + (columnIndex + 1) + ')';
-                var tdSelector = '#adsTable td:nth-child(' + (columnIndex + 1) + ')';
-                
-                $(thSelector + ', ' + tdSelector).css({
-                    'width': maxWidth + 'px',
-                    'min-width': maxWidth + 'px',
-                    'max-width': maxWidth + 'px'
-                });
+        columnItems.forEach(function(item) {
+            // Начало перетаскивания
+            item.addEventListener('dragstart', function() {
+                draggedItem = this;
+                setTimeout(function() {
+                    draggedItem.classList.add('dragging');
+                }, 0);
             });
             
-            // Удаляем измерительный элемент
-            $measure.remove();
-        }
+            // Конец перетаскивания
+            item.addEventListener('dragend', function() {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+            });
+            
+            // Разрешаем перетаскивание
+            item.setAttribute('draggable', 'true');
+            
+            // Обработка события при нахождении над элементом
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                if (draggedItem === this) return;
+                
+                const container = document.getElementById('columnCheckboxes');
+                const afterElement = getDragAfterElement(container, e.clientY);
+                
+                if (afterElement == null) {
+                    container.appendChild(draggedItem);
+                } else {
+                    container.insertBefore(draggedItem, afterElement);
+                }
+            });
+        });
         
-        // Пересчитываем ширину колонок при изменении размера окна
-        $(window).resize(function() {
-            setOptimalColumnWidths();
+        // Вспомогательная функция для определения позиции при перетаскивании
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.column-checkbox-container:not(.dragging)')];
+            
+            return draggableElements.reduce(function(closest, child) {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+    }
+    
+    // Функция для поиска
+    $('#searchInput').on("keyup", function() {
+        const value = $(this).val().toLowerCase();
+        $('#adsTable tbody tr').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
         });
     });
+    
+    // Инициализация модального окна
+    $('#columnSelectionModal').on('show.bs.modal', function() {
+        populateColumnCheckboxes();
+    });
+    
+    // Обработчик для "Выбрать все"
+    $('#selectAllColumns').on('change', function() {
+        $('.column-checkbox').prop('checked', $(this).prop('checked'));
+    });
+    
+    // Обработчик для кнопки "Сбросить"
+    $('#resetToDefaultColumns').on('click', function() {
+        // Отмечаем чекбоксы из шаблона
+        $('.column-checkbox').each(function() {
+            const columnName = $(this).val();
+            $(this).prop('checked', userDefaultColumns.includes(columnName));
+        });
+        
+        // Обновляем чекбокс "Выбрать все"
+        $('#selectAllColumns').prop('checked', allColumns.length === userDefaultColumns.length);
+        
+        // Перезаполняем чекбоксы для восстановления порядка из шаблона
+        populateColumnCheckboxes();
+    });
+    
+    // Обработчик для кнопки "Сохранить как шаблон"
+    $('#saveAsDefaultColumns').on('click', function() {
+        const newDefaultColumns = [];
+        
+        // Собираем выбранные колонки в том порядке, в котором они отображаются в модальном окне
+        $('#columnCheckboxes .column-checkbox-container').each(function() {
+            const checkbox = $(this).find('.column-checkbox');
+            if (checkbox.prop('checked')) {
+                newDefaultColumns.push(checkbox.val());
+            }
+        });
+        
+        // Если ничего не выбрано, показываем сообщение и не применяем изменения
+        if (newDefaultColumns.length === 0) {
+            alert('Выберите хотя бы одну колонку для шаблона');
+            return;
+        }
+        
+        // Сохраняем шаблон в localStorage
+        localStorage.setItem('adsTableDefaultColumns', JSON.stringify(newDefaultColumns));
+        userDefaultColumns = newDefaultColumns;
+        
+        // Показываем сообщение об успешном сохранении
+        alert('Шаблон колонок успешно сохранен');
+    });
+    
+    // Сохранение выбора колонок с учетом порядка
+    $('#saveColumnSelection').on('click', function() {
+        const newSelectedColumns = [];
+        
+        // Собираем выбранные колонки в том порядке, в котором они отображаются в модальном окне
+        $('#columnCheckboxes .column-checkbox-container').each(function() {
+            const checkbox = $(this).find('.column-checkbox');
+            if (checkbox.prop('checked')) {
+                newSelectedColumns.push(checkbox.val());
+            }
+        });
+        
+        // Если ничего не выбрано, показываем сообщение и не применяем изменения
+        if (newSelectedColumns.length === 0) {
+            alert('Выберите хотя бы одну колонку');
+            return;
+        }
+        
+        // Сохраняем выбор в localStorage
+        localStorage.setItem('adsTableColumns', JSON.stringify(newSelectedColumns));
+        
+        // Обновляем выбранные колонки и перерисовываем таблицу
+        selectedColumns = newSelectedColumns;
+        renderTable();
+    });
+    
+    // Обработчик для тумблера "Активные"
+    $('#showActiveOnly').on('change', function() {
+        showActiveOnly = $(this).prop('checked');
+        renderTable();
+    });
+    
+    // Отрисовываем таблицу при загрузке страницы
+    renderTable();
+});
 </script>
 {% endblock %} 

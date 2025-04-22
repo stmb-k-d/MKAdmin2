@@ -19,6 +19,7 @@ urlpatterns = [
     path('ads/', views.ads, name='ads'),
     path('ad/<str:ad_id>/', views.ad_detail, name='ad_detail'),
     path('statistic/', views.statistic_view, name='statistic'),
+    path('statistic/facebook/', views.facebook_stats_view, name='facebook_stats'),
     path('analytics/', views.analytics_view, name='analytics'),
     path('tasks/', views.tasks_view, name='tasks'),
     path('finance/', views.finance_view, name='finance'),

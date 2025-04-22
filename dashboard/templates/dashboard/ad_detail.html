@@ -232,6 +232,32 @@
                         <div class="detail-value">{{ ad.ad_id }}</div>
                     </div>
                     <div class="detail-row">
+                        <div class="detail-label">creative_thumbnail_url</div>
+                        <div class="detail-value">
+                            {% if ad.creative_thumbnail_url %}
+                                <a href="{{ ad.creative_thumbnail_url }}" target="_blank">Просмотр</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">ad_name</div>
+                        <div class="detail-value">{{ ad.ad_name|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">adset_name</div>
+                        <div class="detail-value">{{ ad.adset_name|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">camp_name</div>
+                        <div class="detail-value">{{ ad.camp_name|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">rk_name</div>
+                        <div class="detail-value">{{ ad.rk_name|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
                         <div class="detail-label">fb_objective</div>
                         <div class="detail-value">{{ ad.fb_objective }}</div>
                     </div>
@@ -248,7 +274,51 @@
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">fb_status</div>
-                        <div class="detail-value">{{ ad.fb_status }}</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.fb_status|default:'unknown'|lower }}">
+                                {{ ad.fb_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">ad_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.ad_effective_status|default:'unknown'|lower }}">
+                                {{ ad.ad_effective_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">adset_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.adset_status|default:'unknown'|lower }}">
+                                {{ ad.adset_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">adset_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.adset_effective_status|default:'unknown'|lower }}">
+                                {{ ad.adset_effective_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">camp_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.camp_status|default:'unknown'|lower }}">
+                                {{ ad.camp_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">camp_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.camp_effective_status|default:'unknown'|lower }}">
+                                {{ ad.camp_effective_status|default:"Unknown" }}
+                            </span>
+                        </div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">kt_campaign_id</div>
@@ -279,6 +349,46 @@
                         <div class="detail-value">{{ ad.live_status|default:"-" }}</div>
                     </div>
                     <div class="detail-row">
+                        <div class="detail-label">ad_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.ad_effective_status|default:'unknown'|lower }}">
+                                {{ ad.ad_effective_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">adset_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.adset_status|default:'unknown'|lower }}">
+                                {{ ad.adset_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">adset_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.adset_effective_status|default:'unknown'|lower }}">
+                                {{ ad.adset_effective_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">camp_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.camp_status|default:'unknown'|lower }}">
+                                {{ ad.camp_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">camp_effective_status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-{{ ad.camp_effective_status|default:'unknown'|lower }}">
+                                {{ ad.camp_effective_status|default:"Unknown" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-row">
                         <div class="detail-label">thumbnail_url</div>
                         <div class="detail-value">
                             {% if ad.thumbnail_url %}
@@ -287,6 +397,10 @@
                                 -
                             {% endif %}
                         </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">rk_cur</div>
+                        <div class="detail-value">{{ ad.rk_cur|default:"-" }}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">geo_buying</div>
@@ -303,6 +417,14 @@
                     <div class="detail-row">
                         <div class="detail-label">last_update_kt</div>
                         <div class="detail-value">{{ ad.last_update_kt|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">campaign_id</div>
+                        <div class="detail-value">{{ ad.campaign_id|default:"-" }}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">kt_ad_id</div>
+                        <div class="detail-value">{{ ad.kt_ad_id|default:"-" }}</div>
                     </div>
                 </div>
             </div>

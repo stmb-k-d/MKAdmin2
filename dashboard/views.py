@@ -3,6 +3,8 @@ from django.db import connection
 from .models import MenuItem, Campaign, AdSet, Ad, Proxy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+import json
+import sys
 
 def get_menu_items():
     return [
@@ -267,12 +269,16 @@ def ads(request):
         cursor.execute('SELECT * FROM ad_data')
         columns = [col[0] for col in cursor.description]
         ads = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        # Получаем список всех колонок для выбора пользователем
+        all_columns = columns
     
     return render(request, 'dashboard/ads.html', {
         'menu_items': get_menu_items(),
         'title': 'Ads',
         'page_title': 'Креативы',
-        'ads': ads
+        'ads': ads,
+        'all_columns': json.dumps(all_columns)
     })
 
 def ad_detail(request, ad_id):
@@ -313,4 +319,130 @@ def working_log(request):
     return render(request, 'dashboard/working_log.html', {
         'page_title': 'Working Log',
         'menu_items': get_menu_items()
+    })
+
+def facebook_stats_view(request):
+    """
+    Отображает демо-данные для статистики Facebook
+    из-за проблем с доступом к таблице ad_data_daily
+    """
+    import sys
+    print("================ НАЧАЛО ФУНКЦИИ FACEBOOK_STATS_VIEW (УПРОЩЕННАЯ) ================", file=sys.stderr)
+    
+    # Принудительно создаем демо-данные без попыток проверить таблицу
+    return generate_demo_stats_data(request, ["Принудительно загружены демо-данные для демонстрации функциональности"])
+
+def generate_demo_stats_data(request, errors=None):
+    """
+    Создает демонстрационные данные для отображения на странице статистики
+    
+    Args:
+        request: HTTP-запрос
+        errors: список ошибок для отображения на странице
+    """
+    import random
+    import sys
+    from datetime import datetime, timedelta
+    
+    print("================ НАЧАЛО ГЕНЕРАЦИИ ДЕМО-ДАННЫХ ================", file=sys.stderr)
+    
+    # Создаем список колонок, аналогичный структуре таблицы ad_data_daily
+    columns = [
+        'id', 'date_log', 'ad_id', 'fb_spend', 'fb_impressions', 'fb_clicks', 
+        'fb_ctr', 'fb_cpc', 'fb_cpm', 'fb_link_click', 'fb_cost_per_unique_click',
+        'kt_unic_clicks', 'c2i', 'cr2i', 'cpi', 'regs', 'cr2r', 'i2r', 'cpr',
+        'cr2d', 'r2s', 'cps', 'deps', 'income', 'bprofit', 'broi'
+    ]
+    
+    # Создаем 10 случайных ad_id
+    ad_ids = [f"2318900{i}556{i+2}" for i in range(10)]
+    
+    # Создаем даты за последние 30 дней
+    end_date = datetime.now()
+    dates = [(end_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(30)]
+    
+    # Создаем демо-данные
+    stats_data = []
+    id_counter = 1
+    
+    print(f"Генерируем данные для {len(ad_ids)} объявлений и {len(dates)} дат", file=sys.stderr)
+    
+    for ad_id in ad_ids:
+        for date in dates:
+            # Базовые метрики
+            spend = round(random.uniform(10, 100), 2)
+            impressions = random.randint(1000, 10000)
+            clicks = random.randint(10, impressions // 50)
+            
+            # Расчетные метрики
+            ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
+            cpc = round(spend / clicks, 2) if clicks > 0 else 0
+            cpm = round((spend / impressions) * 1000, 2) if impressions > 0 else 0
+            
+            link_clicks = int(clicks * random.uniform(0.8, 1.0))
+            cost_per_unique_click = round(spend / (link_clicks * random.uniform(0.8, 0.95)), 2) if link_clicks > 0 else 0
+            
+            kt_unic_clicks = int(link_clicks * random.uniform(0.8, 0.95))
+            c2i = int(kt_unic_clicks * random.uniform(0.1, 0.4))
+            cr2i = round((c2i / kt_unic_clicks) * 100, 2) if kt_unic_clicks > 0 else 0
+            cpi = round(spend / c2i, 2) if c2i > 0 else 0
+            
+            regs = int(c2i * random.uniform(0.5, 0.9))
+            cr2r = round((regs / clicks) * 100, 2) if clicks > 0 else 0
+            i2r = round((regs / c2i) * 100, 2) if c2i > 0 else 0
+            cpr = round(spend / regs, 2) if regs > 0 else 0
+            
+            deps = int(regs * random.uniform(0.1, 0.4))
+            cr2d = round((deps / clicks) * 100, 2) if clicks > 0 else 0
+            r2s = round((deps / regs) * 100, 2) if regs > 0 else 0
+            cps = round(spend / deps, 2) if deps > 0 else 0
+            
+            income = round(deps * random.uniform(50, 200), 2)
+            bprofit = round(income - spend, 2)
+            broi = round((bprofit / spend) * 100, 2) if spend > 0 else 0
+            
+            # Создаем запись
+            stats_data.append({
+                'id': id_counter,
+                'date_log': date,
+                'ad_id': ad_id,
+                'fb_spend': spend,
+                'fb_impressions': impressions,
+                'fb_clicks': clicks,
+                'fb_ctr': ctr,
+                'fb_cpc': cpc,
+                'fb_cpm': cpm,
+                'fb_link_click': link_clicks,
+                'fb_cost_per_unique_click': cost_per_unique_click,
+                'kt_unic_clicks': kt_unic_clicks,
+                'c2i': c2i,
+                'cr2i': cr2i,
+                'cpi': cpi,
+                'regs': regs,
+                'cr2r': cr2r,
+                'i2r': i2r,
+                'cpr': cpr,
+                'cr2d': cr2d,
+                'r2s': r2s,
+                'cps': cps,
+                'deps': deps,
+                'income': income,
+                'bprofit': bprofit,
+                'broi': broi
+            })
+            id_counter += 1
+    
+    print(f"Сгенерировано {len(stats_data)} записей", file=sys.stderr)
+    print("================ КОНЕЦ ГЕНЕРАЦИИ ДЕМО-ДАННЫХ ================", file=sys.stderr)
+    
+    return render(request, 'dashboard/facebook_stats.html', {
+        'menu_items': get_menu_items(),
+        'title': 'Facebook Stats (Demo)',
+        'page_title': 'Статистика Facebook (Демо-данные)',
+        'stats_data': stats_data,
+        'columns': columns,
+        'dates': dates,
+        'ad_ids': ad_ids,
+        'is_demo': True,
+        'errors': errors
     })
