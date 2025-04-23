@@ -524,7 +524,17 @@ $(document).ready(function() {
                 const td = document.createElement('td');
                 
                 const value = item[column];
-                td.textContent = value !== null ? value : '-';
+                
+                // Создаем ссылку для колонки ad_id
+                if (column === 'ad_id' && value && value !== '-') {
+                    const link = document.createElement('a');
+                    link.href = `/ad/${value}/`;
+                    link.className = 'text-primary';
+                    link.textContent = value;
+                    td.appendChild(link);
+                } else {
+                    td.textContent = value !== null ? value : '-';
+                }
                 
                 // Дополнительные стили в зависимости от типа данных
                 if (column === 'date_log') {
