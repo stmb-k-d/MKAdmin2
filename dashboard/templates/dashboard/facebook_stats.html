@@ -1,27 +1,117 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
+{% load dashboard_tags %}
 
-{% block title %}{% if is_demo %}{{ title }}{% else %}Статистика Facebook{% endif %}{% endblock %}
+{% block title %}{{ title|default:'Статистика Facebook' }}{% endblock %}
 
-{% block page_title %}{% if is_demo %}{{ page_title }}{% else %}Статистика Facebook{% endif %}{% endblock %}
+{% block page_title %}{{ page_title|default:'Статистика Facebook' }}{% endblock %}
 
 {% block extra_head %}
 <style>
-    /* Основные стили таблицы */
-    .stats-container {
+    /* Основной контейнер с прокруткой */
+    .table-container {
         width: 100%;
         overflow-x: auto;
-        max-height: 75vh;
+        max-height: 85vh;
         overflow-y: auto;
     }
     
+    /* Фильтр по датам */
+    .date-filter .input-group {
+        width: auto;
+    }
+    
+    .date-filter input[type="date"] {
+        width: 130px;
+    }
+    
+    /* Стили для статусов fb_effective_status */
+    .status-active {
+        background-color: #28a745 !important;
+        color: #fff !important;
+        font-weight: bold;
+    }
+    
+    .status-paused, .status-adset_paused, .status-campaign_paused {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+        font-weight: bold;
+    }
+    
+    .status-deleted, .status-disapproved, .status-rejected {
+        background-color: #dc3545 !important;
+        color: #fff !important;
+        font-weight: bold;
+    }
+    
+    .status-archived {
+        background-color: #6c757d !important;
+        color: #fff !important;
+        font-weight: bold;
+    }
+    
+    .status-pending, .status-in_review {
+        background-color: #17a2b8 !important;
+        color: #fff !important;
+        font-weight: bold;
+    }
+    
+    .status-with_issues {
+        background-color: #9c27b0 !important;
+        color: #fff !important;
+        font-weight: bold;
+    }
+    
+    /* Стили для статусов fb_status (более тусклые) */
+    .status-fb-active {
+        background-color: rgba(40, 167, 69, 0.6) !important;
+        color: #fff !important;
+    }
+    
+    .status-fb-paused, .status-fb-adset_paused, .status-fb-campaign_paused {
+        background-color: rgba(255, 193, 7, 0.6) !important;
+        color: #000 !important;
+    }
+    
+    .status-fb-deleted, .status-fb-disapproved, .status-fb-rejected {
+        background-color: rgba(220, 53, 69, 0.6) !important;
+        color: #fff !important;
+    }
+    
+    .status-fb-archived {
+        background-color: rgba(108, 117, 125, 0.6) !important;
+        color: #fff !important;
+    }
+    
+    .status-fb-pending, .status-fb-in_review {
+        background-color: rgba(23, 162, 184, 0.6) !important;
+        color: #fff !important;
+    }
+    
+    .status-fb-with_issues {
+        background-color: rgba(156, 39, 176, 0.6) !important;
+        color: #fff !important;
+    }
+    
+    /* Стили для легенды статусов */
+    .status-legend {
+        background-color: #f8f9fa;
+        border-radius: 0 0 .25rem .25rem;
+    }
+    
+    .status-badge {
+        border-radius: 4px;
+    }
+    
+    /* Основные стили таблицы */
     #statsTable {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         width: 100%;
         table-layout: fixed;
         border-collapse: collapse;
     }
     
+    /* Ячейки таблицы */
     #statsTable th, 
     #statsTable td {
         text-align: center;
@@ -29,10 +119,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding: 4px;
+        padding: 3px;
         border: 1px solid #dee2e6;
     }
     
+    /* Заголовки */
     #statsTable th {
         background-color: #f8f9fa;
         font-weight: bold;
@@ -41,12 +132,18 @@
         z-index: 10;
     }
     
+    /* Строки */
     #statsTable tr:nth-child(even) {
         background-color: rgba(0, 0, 0, 0.02);
     }
     
     #statsTable tr:hover {
         background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Выделенная строка */
+    #statsTable tbody tr.highlighted {
+        background-color: rgba(40, 167, 69, 0.15) !important;
     }
     
     /* Стили для сортировки */
@@ -72,19 +169,7 @@
         opacity: 1;
     }
     
-    /* Стили для фильтров */
-    .filters-panel {
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        padding: 15px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .filter-group {
-        margin-bottom: 10px;
-    }
-    
+    /* Стили для модального окна выбора колонок */
     .column-selection-modal .modal-body {
         max-height: 70vh;
         overflow-y: auto;
@@ -120,105 +205,42 @@
         flex-grow: 1;
     }
     
+    /* Стиль для перетаскиваемого элемента */
     .column-checkbox-container.dragging {
         opacity: 0.5;
         border: 1px dashed #0d6efd;
     }
     
-    /* Стили для дашбоарда */
-    .stats-summary {
-        margin-bottom: 20px;
-    }
-    
-    .summary-card {
-        background-color: #fff;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 15px;
-        margin-bottom: 15px;
-        transition: all 0.3s ease;
-    }
-    
-    .summary-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-    
-    .summary-card .value {
-        font-size: 1.75rem;
-        font-weight: bold;
-        color: #4267B2;
-    }
-    
-    .summary-card .title {
-        font-size: 0.9rem;
-        color: #6c757d;
-    }
-    
-    .chart-container {
-        height: 300px;
-        margin-bottom: 30px;
-    }
-    
-    /* Стиль для демо-уведомления */
-    .demo-notification {
-        background-color: #fff3cd;
-        border: 1px solid #ffeeba;
-        border-radius: 5px;
-        padding: 15px;
-        margin-bottom: 20px;
-        color: #856404;
-    }
-    
-    .demo-notification h5 {
-        color: #856404;
-        margin-top: 0;
+    /* Кнопки управления колонками */
+    .column-buttons {
+        margin-left: 10px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="demo-notification" style="display: block !important;">
-    <h5><i class="fas fa-info-circle"></i> Режим отладки</h5>
-    <p>Это принудительное уведомление для отладки. Проверяем, отображается ли оно на странице.</p>
-    <p>Если вы видите это уведомление, значит шаблон рендерится правильно, но переменная <code>is_demo</code> не передаётся в контекст.</p>
-</div>
-
-{% if is_demo %}
-<div class="demo-notification">
-    <h5><i class="fas fa-info-circle"></i> Демонстрационный режим</h5>
-    <p>Таблица <code>ad_data_daily</code> не найдена или пуста. Отображаются сгенерированные данные для демонстрации функциональности.</p>
-    <p>Для работы с реальными данными необходимо создать таблицу <code>ad_data_daily</code> с соответствующей структурой и заполнить ее данными.</p>
-    
-    {% if errors %}
-    <hr>
-    <h6><i class="fas fa-exclamation-triangle"></i> Обнаружены следующие ошибки:</h6>
-    <ul class="mb-0">
-        {% for error in errors %}
-        <li>{{ error }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-</div>
-{% endif %}
-
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Статистика Facebook</h5>
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3">Статистика Facebook</h5>
+        </div>
         <div class="d-flex">
-            <div class="me-2">
+            <div class="date-filter me-3">
+                <div class="input-group">
+                    <input type="date" id="dateFrom" class="form-control form-control-sm" placeholder="С">
+                    <span class="input-group-text">—</span>
+                    <input type="date" id="dateTo" class="form-control form-control-sm" placeholder="По">
+                    <button id="applyDateFilter" class="btn btn-sm btn-primary">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button id="resetDateFilter" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="column-buttons me-2">
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
                     <i class="fas fa-columns"></i> Настроить колонки
-                </button>
-            </div>
-            <div class="me-2">
-                <button type="button" class="btn btn-outline-primary btn-sm" id="toggleFilters">
-                    <i class="fas fa-filter"></i> Фильтры
-                </button>
-            </div>
-            <div class="me-2">
-                <button type="button" class="btn btn-outline-primary btn-sm" id="toggleDashboard">
-                    <i class="fas fa-chart-line"></i> Дашборд
                 </button>
             </div>
             <div>
@@ -226,99 +248,26 @@
             </div>
         </div>
     </div>
-    
-    <!-- Панель фильтров -->
-    <div class="card-body filters-panel" id="filtersPanel" style="display: none;">
-        <div class="row">
-            <div class="col-md-3">
-                <div class="filter-group">
-                    <label class="form-label">Дата:</label>
-                    <select class="form-select form-select-sm" id="dateFilter">
-                        <option value="">Все даты</option>
-                        {% for date in dates %}
-                        <option value="{{ date }}">{{ date|date:"d.m.Y" }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="filter-group">
-                    <label class="form-label">Ad ID:</label>
-                    <select class="form-select form-select-sm" id="adIdFilter">
-                        <option value="">Все объявления</option>
-                        {% for ad_id in ad_ids %}
-                        <option value="{{ ad_id }}">{{ ad_id }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="filter-group">
-                    <label class="form-label">Минимальные клики:</label>
-                    <input type="number" class="form-control form-control-sm" id="minClicksFilter" placeholder="Мин. клики">
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="filter-group">
-                    <label class="form-label">Минимальные конверсии:</label>
-                    <input type="number" class="form-control form-control-sm" id="minConversionsFilter" placeholder="Мин. конверсии">
-                </div>
-            </div>
-        </div>
-        <div class="row mt-2">
-            <div class="col-12 text-end">
-                <button class="btn btn-primary btn-sm" id="applyFilters">Применить</button>
-                <button class="btn btn-secondary btn-sm" id="resetFilters">Сбросить</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Дашборд с графиками и метриками -->
-    <div class="card-body" id="dashboardPanel" style="display: none;">
-        <div class="row stats-summary">
-            <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="value" id="totalSpend">-</div>
-                    <div class="title">Общие затраты</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="value" id="totalClicks">-</div>
-                    <div class="title">Всего кликов</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="value" id="totalRegs">-</div>
-                    <div class="title">Всего регистраций</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="value" id="avgCTR">-</div>
-                    <div class="title">Средний CTR</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="chart-container">
-                    <canvas id="spendChart"></canvas>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="chart-container">
-                    <canvas id="conversionsChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Таблица с данными -->
     <div class="card-body p-0">
-        <div class="stats-container">
+        {% if error %}
+        <div class="alert alert-danger m-3">
+            {{ error }}
+        </div>
+        {% else %}
+        {% if date_from or date_to %}
+        <div class="alert alert-info m-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-filter"></i> 
+                Активный фильтр: 
+                {% if date_from %}с {{ date_from }}{% endif %}
+                {% if date_to %}по {{ date_to }}{% endif %}
+            </div>
+            <a href="{% url 'dashboard:facebook_stats' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-times"></i> Сбросить
+            </a>
+        </div>
+        {% endif %}
+        <div class="table-container">
             <table id="statsTable" class="table table-bordered">
                 <thead>
                     <tr id="tableHeader">
@@ -330,6 +279,40 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Легенда статусов -->
+        <div class="status-legend p-3 border-top">
+            <h6 class="mb-2">Статусы объявлений:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                <div class="d-flex align-items-center">
+                    <span class="status-badge status-active d-inline-block me-1" style="width: 16px; height: 16px;"></span>
+                    <small>Active</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="status-badge status-paused d-inline-block me-1" style="width: 16px; height: 16px;"></span>
+                    <small>Paused/ADSET_PAUSED/CAMPAIGN_PAUSED</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="status-badge status-deleted d-inline-block me-1" style="width: 16px; height: 16px;"></span>
+                    <small>Deleted/Disapproved</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="status-badge status-archived d-inline-block me-1" style="width: 16px; height: 16px;"></span>
+                    <small>Archived</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="status-badge status-pending d-inline-block me-1" style="width: 16px; height: 16px;"></span>
+                    <small>Pending/In Review</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="status-badge status-with_issues d-inline-block me-1" style="width: 16px; height: 16px;"></span>
+                    <small>With Issues</small>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">* Примечание: Статусы в колонке fb_status выделены менее ярко, чем в fb_effective_status</small>
+        </div>
+
+        {% endif %}
     </div>
 </div>
 
@@ -366,707 +349,414 @@
         </div>
     </div>
 </div>
+
+<!-- Скрипт для выделения строк -->
+<script>
+function highlightRow(row, event) {
+    // Проверяем, что клик не на ссылку или span внутри ячейки
+    if (event.target.tagName.toLowerCase() === 'a' || 
+        event.target.parentElement.tagName.toLowerCase() === 'a') {
+        return;
+    }
+    
+    // Проверяем, выделена ли уже строка
+    if (row.classList.contains('highlighted')) {
+        // Если строка выделена, снимаем выделение
+        row.classList.remove('highlighted');
+    } else {
+        // Снимаем выделение со всех строк
+        const rows = document.querySelectorAll('#statsTable tbody tr');
+        rows.forEach(r => r.classList.remove('highlighted'));
+        
+        // Выделяем текущую строку
+        row.classList.add('highlighted');
+    }
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 <script>
 $(document).ready(function() {
-    // -----------------------------------------
-    // Данные для таблицы и графиков
-    // -----------------------------------------
-    const statsData = [];
-    {% for stat in stats_data %}
-    statsData.push({
-        {% for key, value in stat.items %}
-        "{{ key }}": {% if value != None %}"{{ value|escapejs }}"{% else %}null{% endif %},
-        {% endfor %}
-    });
-    {% endfor %}
+    // Инициализация элементов фильтра по датам
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const applyDateFilter = document.getElementById('applyDateFilter');
+    const resetDateFilter = document.getElementById('resetDateFilter');
     
-    // Все доступные колонки
-    const allColumns = JSON.parse('{{ columns|safe|escapejs }}');
+    // Установка начальных значений дат (последний месяц)
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setMonth(today.getMonth() - 1);
+    
+    // Получение параметров из URL, если они есть
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlDateFrom = urlParams.get('date_from');
+    const urlDateTo = urlParams.get('date_to');
+    
+    // Если параметры есть в URL, устанавливаем их, иначе используем значения по умолчанию
+    if (urlDateFrom) {
+        dateFrom.value = urlDateFrom;
+    } else {
+        {% if date_from %}
+        dateFrom.value = "{{ date_from }}";
+        {% else %}
+        dateFrom.value = lastMonth.toISOString().split('T')[0];
+        {% endif %}
+    }
+    
+    if (urlDateTo) {
+        dateTo.value = urlDateTo;
+    } else {
+        {% if date_to %}
+        dateTo.value = "{{ date_to }}";
+        {% else %}
+        dateTo.value = today.toISOString().split('T')[0];
+        {% endif %}
+    }
+    
+    // Обработчик кнопки применения фильтра
+    applyDateFilter.addEventListener('click', function() {
+        if (dateFrom.value && dateTo.value) {
+            // Формируем URL с параметрами дат
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('date_from', dateFrom.value);
+            currentUrl.searchParams.set('date_to', dateTo.value);
+            
+            // Переходим по новому URL с фильтрами
+            window.location.href = currentUrl.toString();
+        } else {
+            alert('Пожалуйста, выберите диапазон дат');
+        }
+    });
+    
+    // Обработчик кнопки сброса фильтра
+    resetDateFilter.addEventListener('click', function() {
+        // Сбрасываем параметры дат в URL
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('date_from');
+        currentUrl.searchParams.delete('date_to');
+        
+        // Переходим по URL без фильтров
+        window.location.href = currentUrl.toString();
+    });
+
+    // Подготовим данные для таблицы
+    const statsData = [
+    {% for item in data %}
+        {
+        {% for column in columns %}
+            "{{ column }}": "{{ item|get_item:column|default:'-'|escapejs }}",
+        {% endfor %}
+        }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    ];
+    
+    // Загружаем все доступные колонки
+    const allColumns = [{% for column in columns %}"{{ column }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
     console.log("Доступные колонки:", allColumns);
     
     // Изначально выбранные колонки по умолчанию
-    const initialDefaultColumns = [
-        'date_log', 'ad_id', 'fb_spend', 'fb_impressions', 'fb_clicks', 
-        'fb_ctr', 'fb_cpc', 'fb_cpm', 'regs', 'deps', 'cpi', 'cpr', 'cps', 'income', 'bprofit', 'broi'
-    ];
+    const initialDefaultColumns = allColumns.length > 15 ? allColumns.slice(0, 15) : allColumns;
     
-    // Получаем пользовательский шаблон колонок
-    let userDefaultColumns;
-    try {
-        const savedDefaultJSON = localStorage.getItem('fbStatsDefaultColumns');
-        if (savedDefaultJSON) {
-            userDefaultColumns = JSON.parse(savedDefaultJSON);
+    // Получаем сохраненные пользовательские настройки колонок из localStorage
+    let userColumnSettings = localStorage.getItem('fbStatsColumnSettings');
+    let selectedColumns = initialDefaultColumns;
+    
+    if (userColumnSettings) {
+        try {
+            userColumnSettings = JSON.parse(userColumnSettings);
+            if (Array.isArray(userColumnSettings) && userColumnSettings.length > 0) {
+                // Проверяем, что все выбранные колонки существуют в allColumns
+                selectedColumns = userColumnSettings.filter(col => allColumns.includes(col));
+                // Если после фильтрации список пустой, используем дефолтные колонки
+                if (selectedColumns.length === 0) {
+                    selectedColumns = initialDefaultColumns;
+                }
+            }
+        } catch (e) {
+            console.error("Ошибка при парсинге сохраненных настроек колонок:", e);
+            selectedColumns = initialDefaultColumns;
+        }
+    }
+    
+    // Функции для работы с таблицей
+    
+    // Функция для построения таблицы на основе выбранных колонок
+    function buildTable() {
+        const tableHeader = document.getElementById('tableHeader');
+        const tableBody = document.getElementById('tableBody');
+        
+        // Очищаем заголовок и тело таблицы
+        tableHeader.innerHTML = '';
+        tableBody.innerHTML = '';
+        
+        // Создаем заголовки таблицы
+        selectedColumns.forEach(column => {
+            const th = document.createElement('th');
+            th.textContent = column;
+            th.className = 'sorting';
+            th.addEventListener('click', () => sortTable(column));
+            tableHeader.appendChild(th);
+        });
+        
+        // Создаем строки таблицы
+        statsData.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.addEventListener('click', (event) => highlightRow(tr, event));
+            
+            selectedColumns.forEach(column => {
+                const td = document.createElement('td');
+                
+                const value = item[column];
+                td.textContent = value !== null ? value : '-';
+                
+                // Дополнительные стили в зависимости от типа данных
+                if (column === 'date_log') {
+                    td.classList.add('date-cell');
+                } else if (column.includes('spend') || column.includes('cpc') || column.includes('cpm')) {
+                    td.classList.add('numeric-cell');
+                } else if (column.includes('ctr') || column.includes('cr')) {
+                    td.classList.add('percent-cell');
+                }
+                
+                // Добавляем стили для статусов
+                if (column === 'fb_effective_status' && value) {
+                    const statusClass = 'status-' + value.toLowerCase().replace(/\s+/g, '_');
+                    td.classList.add(statusClass);
+                } else if (column === 'fb_status' && value) {
+                    const statusClass = 'status-fb-' + value.toLowerCase().replace(/\s+/g, '_');
+                    td.classList.add(statusClass);
+                }
+                
+                tr.appendChild(td);
+            });
+            
+            tableBody.appendChild(tr);
+        });
+    }
+    
+    // Функция для построения модального окна выбора колонок
+    function buildColumnSelectionModal() {
+        const columnCheckboxes = document.getElementById('columnCheckboxes');
+        columnCheckboxes.innerHTML = '';
+        
+        // Создаем чекбоксы для каждой колонки
+        allColumns.forEach(column => {
+            const checkboxContainer = document.createElement('div');
+            checkboxContainer.className = 'column-checkbox-container';
+            checkboxContainer.dataset.column = column;
+            
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'drag-handle';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+            
+            const formCheck = document.createElement('div');
+            formCheck.className = 'form-check';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'form-check-input column-checkbox';
+            checkbox.id = `col-${column}`;
+            checkbox.checked = selectedColumns.includes(column);
+            checkbox.value = column;
+            
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.htmlFor = `col-${column}`;
+            label.textContent = column;
+            
+            formCheck.appendChild(checkbox);
+            formCheck.appendChild(label);
+            
+            checkboxContainer.appendChild(dragHandle);
+            checkboxContainer.appendChild(formCheck);
+            
+            columnCheckboxes.appendChild(checkboxContainer);
+        });
+        
+        // Делаем колонки перетаскиваемыми
+        setupDragAndDrop();
+    }
+    
+    // Функция для настройки drag-and-drop
+    function setupDragAndDrop() {
+        const containers = document.querySelectorAll('.column-checkbox-container');
+        
+        containers.forEach(container => {
+            container.setAttribute('draggable', true);
+            
+            container.addEventListener('dragstart', function() {
+                this.classList.add('dragging');
+            });
+            
+            container.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+            });
+        });
+        
+        const columnSelectionContainer = document.querySelector('.column-selection-container');
+        
+        columnSelectionContainer.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            const draggable = document.querySelector('.dragging');
+            const afterElement = getDragAfterElement(this, e.clientY);
+            
+            if (afterElement == null) {
+                this.appendChild(draggable);
+            } else {
+                this.insertBefore(draggable, afterElement);
+            }
+        });
+    }
+    
+    // Вспомогательная функция для определения позиции при перетаскивании
+    function getDragAfterElement(container, y) {
+        const dragableElements = [...container.querySelectorAll('.column-checkbox-container:not(.dragging)')];
+        
+        return dragableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+    
+    // Функция для сортировки таблицы
+    function sortTable(column) {
+        const headerCells = document.querySelectorAll('#statsTable th');
+        let sortDirection = 'asc';
+        
+        // Находим ячейку заголовка для данной колонки
+        const headerCell = Array.from(headerCells).find(cell => cell.textContent === column);
+        
+        // Определяем направление сортировки
+        if (headerCell.classList.contains('sorting_asc')) {
+            sortDirection = 'desc';
+            headerCell.classList.remove('sorting_asc');
+            headerCell.classList.add('sorting_desc');
         } else {
-            userDefaultColumns = initialDefaultColumns;
-        }
-    } catch (e) {
-        console.error('Ошибка при загрузке шаблона колонок:', e);
-        userDefaultColumns = initialDefaultColumns;
-    }
-    
-    // Загружаем сохраненные колонки или используем шаблон
-    let selectedColumns;
-    try {
-        const savedColumnsJSON = localStorage.getItem('fbStatsColumns');
-        if (savedColumnsJSON) {
-            selectedColumns = JSON.parse(savedColumnsJSON);
-            if (!selectedColumns || selectedColumns.length === 0) {
-                selectedColumns = userDefaultColumns;
-            }
-        } else {
-            selectedColumns = userDefaultColumns;
-        }
-    } catch (e) {
-        console.error('Ошибка при загрузке сохраненных колонок:', e);
-        selectedColumns = userDefaultColumns;
-    }
-    
-    // Активные фильтры
-    let activeFilters = {
-        date: '',
-        adId: '',
-        minClicks: '',
-        minConversions: ''
-    };
-    
-    // -----------------------------------------
-    // Функции отображения и форматирования
-    // -----------------------------------------
-    
-    // Функция для форматирования значений в ячейках
-    function formatCellValue(column, value) {
-        if (value === null || value === undefined || value === '') {
-            return '-';
+            headerCell.classList.remove('sorting_desc');
+            headerCell.classList.add('sorting_asc');
         }
         
-        // Специальное форматирование для конкретных колонок
-        if (column === 'date_log') {
-            // Форматирование дат
-            try {
-                const date = new Date(value);
-                if (!isNaN(date.getTime())) {
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const year = date.getFullYear();
-                    return day + '.' + month + '.' + year;
+        // Сбрасываем классы сортировки у всех других заголовков
+        headerCells.forEach(cell => {
+            if (cell !== headerCell) {
+                cell.classList.remove('sorting_asc', 'sorting_desc');
+            }
+        });
+        
+        // Сортируем данные
+        statsData.sort((a, b) => {
+            let valA = a[column] || '';
+            let valB = b[column] || '';
+            
+            // Преобразуем строковые значения в числа если это возможно
+            if (!isNaN(valA) && !isNaN(valB)) {
+                valA = parseFloat(valA);
+                valB = parseFloat(valB);
+            }
+            
+            // Сравниваем значения
+            if (valA < valB) {
+                return sortDirection === 'asc' ? -1 : 1;
+            } else if (valA > valB) {
+                return sortDirection === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+        
+        // Перестраиваем таблицу
+        buildTable();
+    }
+    
+    // Функция для применения фильтра поиска
+    function applySearchFilter(searchTerm) {
+        const tableRows = document.querySelectorAll('#statsTable tbody tr');
+        const searchTermLower = searchTerm.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            let rowMatches = false;
+            
+            cells.forEach(cell => {
+                if (cell.textContent.toLowerCase().includes(searchTermLower)) {
+                    rowMatches = true;
                 }
-            } catch (e) {}
-            return value;
-        } else if (column === 'ad_id') {
-            return '<a href="/ad/' + value + '/" class="text-primary">' + value + '</a>';
-        } else if (['fb_spend', 'fb_cpc', 'fb_cpm', 'cpi', 'cpr', 'cps', 'income', 'bprofit'].includes(column)) {
-            // Форматирование денежных значений
-            return parseFloat(value).toFixed(2);
-        } else if (['fb_ctr', 'broi'].includes(column)) {
-            // Форматирование процентов
-            return parseFloat(value).toFixed(2) + '%';
-        } else if (['fb_impressions', 'fb_clicks', 'regs', 'deps'].includes(column)) {
-            // Форматирование целых чисел
-            return parseInt(value).toLocaleString();
-        }
-        
-        return value;
-    }
-    
-    // Функция для отрисовки таблицы с учетом фильтров
-    function renderTable() {
-        const headerRow = $('#tableHeader');
-        const tableBody = $('#tableBody');
-        
-        // Очищаем содержимое
-        headerRow.empty();
-        tableBody.empty();
-        
-        // Добавляем заголовки колонок
-        selectedColumns.forEach(function(column) {
-            const th = $('<th>')
-                .addClass('sorting')
-                .text(column);
-            headerRow.append(th);
-        });
-        
-        // Применяем фильтры к данным
-        const filteredData = statsData.filter(function(stat) {
-            // Фильтр по дате
-            if (activeFilters.date && stat.date_log !== activeFilters.date) {
-                return false;
-            }
-            
-            // Фильтр по ad_id
-            if (activeFilters.adId && stat.ad_id !== activeFilters.adId) {
-                return false;
-            }
-            
-            // Фильтр по минимальному количеству кликов
-            if (activeFilters.minClicks && parseFloat(stat.fb_clicks || 0) < parseFloat(activeFilters.minClicks)) {
-                return false;
-            }
-            
-            // Фильтр по минимальному количеству конверсий
-            if (activeFilters.minConversions && parseFloat(stat.regs || 0) < parseFloat(activeFilters.minConversions)) {
-                return false;
-            }
-            
-            return true;
-        });
-        
-        // Добавляем строки с данными
-        filteredData.forEach(function(stat) {
-            const tr = $('<tr>');
-            
-            selectedColumns.forEach(function(column) {
-                const td = $('<td>');
-                td.html(formatCellValue(column, stat[column]));
-                tr.append(td);
             });
             
-            tableBody.append(tr);
-        });
-        
-        // Инициализируем сортировку
-        initTableSorting();
-        
-        // Обновляем дашборд
-        updateDashboard(filteredData);
-    }
-    
-    // Функция для инициализации сортировки
-    function initTableSorting() {
-        $('#statsTable th').off('click').click(function() {
-            const table = $(this).parents('table').eq(0);
-            const index = $(this).index();
-            const isAsc = !$(this).hasClass('sorting_asc');
-            
-            // Удаляем классы сортировки со всех заголовков
-            table.find('th').removeClass('sorting_asc sorting_desc');
-            
-            // Добавляем класс сортировки на текущий заголовок
-            $(this).addClass(isAsc ? 'sorting_asc' : 'sorting_desc');
-            
-            // Сортируем строки
-            const rows = table.find('tbody tr').toArray().sort(function(a, b) {
-                const valA = $(a).find('td').eq(index).text().trim();
-                const valB = $(b).find('td').eq(index).text().trim();
-                
-                // Пробуем сортировать как числа
-                const numA = parseFloat(valA.replace(/[^\d.-]/g, ''));
-                const numB = parseFloat(valB.replace(/[^\d.-]/g, ''));
-                
-                if (!isNaN(numA) && !isNaN(numB)) {
-                    return isAsc ? numA - numB : numB - numA;
-                }
-                
-                return isAsc 
-                    ? valA.localeCompare(valB) 
-                    : valB.localeCompare(valA);
-            });
-            
-            // Добавляем отсортированные строки
-            $.each(rows, function(i, row) {
-                table.children('tbody').append(row);
-            });
-        });
-    }
-    
-    // Функция для обновления дашборда
-    function updateDashboard(data) {
-        // Рассчитываем сводные метрики
-        let totalSpend = 0;
-        let totalClicks = 0;
-        let totalRegs = 0;
-        let totalImpressions = 0;
-        
-        data.forEach(function(item) {
-            totalSpend += parseFloat(item.fb_spend || 0);
-            totalClicks += parseInt(item.fb_clicks || 0);
-            totalRegs += parseInt(item.regs || 0);
-            totalImpressions += parseInt(item.fb_impressions || 0);
-        });
-        
-        const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions * 100).toFixed(2) + '%' : '0%';
-        
-        // Обновляем значения в карточках
-        $('#totalSpend').text('$' + totalSpend.toFixed(2));
-        $('#totalClicks').text(totalClicks.toLocaleString());
-        $('#totalRegs').text(totalRegs.toLocaleString());
-        $('#avgCTR').text(avgCTR);
-        
-        // Обновляем графики
-        updateCharts(data);
-    }
-    
-    // Функция для обновления графиков
-    function updateCharts(data) {
-        // Группируем данные по датам для графиков
-        const dateGroups = {};
-        
-        data.forEach(function(item) {
-            const date = item.date_log;
-            if (!date) return;
-            
-            if (!dateGroups[date]) {
-                dateGroups[date] = {
-                    spend: 0,
-                    clicks: 0,
-                    regs: 0,
-                    deps: 0
-                };
-            }
-            
-            dateGroups[date].spend += parseFloat(item.fb_spend || 0);
-            dateGroups[date].clicks += parseInt(item.fb_clicks || 0);
-            dateGroups[date].regs += parseInt(item.regs || 0);
-            dateGroups[date].deps += parseInt(item.deps || 0);
-        });
-        
-        // Сортируем даты
-        const sortedDates = Object.keys(dateGroups).sort();
-        
-        // Подготавливаем данные для графиков
-        const labels = sortedDates.map(function(date) {
-            try {
-                const d = new Date(date);
-                return d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear();
-            } catch (e) {
-                return date;
-            }
-        });
-        
-        const spendData = sortedDates.map(date => dateGroups[date].spend);
-        const clicksData = sortedDates.map(date => dateGroups[date].clicks);
-        const regsData = sortedDates.map(date => dateGroups[date].regs);
-        const depsData = sortedDates.map(date => dateGroups[date].deps);
-        
-        // Создаем или обновляем график затрат
-        if (window.spendChart) {
-            window.spendChart.destroy();
-        }
-        
-        const spendCtx = document.getElementById('spendChart').getContext('2d');
-        window.spendChart = new Chart(spendCtx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Затраты ($)',
-                    data: spendData,
-                    borderColor: '#4267B2',
-                    backgroundColor: 'rgba(66, 103, 178, 0.1)',
-                    borderWidth: 2,
-                    fill: true
-                }, {
-                    label: 'Клики',
-                    data: clicksData,
-                    borderColor: '#42B72A',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    yAxisID: 'y1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Затраты и клики по дням'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Затраты ($)'
-                        }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Клики'
-                        },
-                        grid: {
-                            drawOnChartArea: false
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Создаем или обновляем график конверсий
-        if (window.conversionsChart) {
-            window.conversionsChart.destroy();
-        }
-        
-        const conversionsCtx = document.getElementById('conversionsChart').getContext('2d');
-        window.conversionsChart = new Chart(conversionsCtx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Регистрации',
-                    data: regsData,
-                    backgroundColor: 'rgba(66, 103, 178, 0.7)'
-                }, {
-                    label: 'Депозиты',
-                    data: depsData,
-                    backgroundColor: 'rgba(66, 183, 42, 0.7)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Конверсии по дням'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Количество'
-                        }
-                    }
-                }
+            if (rowMatches) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
         });
     }
-    
-    // -----------------------------------------
-    // Обработчики событий
-    // -----------------------------------------
     
     // Обработчик для поиска
-    $('#searchInput').on("keyup", function() {
-        const value = $(this).val().toLowerCase();
-        $('#statsTable tbody tr').filter(function() {
-            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
-        });
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+        applySearchFilter(this.value);
     });
     
-    // Обработчики для панели фильтров
-    $('#toggleFilters').on('click', function() {
-        $('#filtersPanel').slideToggle();
-    });
-    
-    // Обработчик для панели дашборда
-    $('#toggleDashboard').on('click', function() {
-        const dashboardPanel = $('#dashboardPanel');
-        dashboardPanel.slideToggle();
-        
-        // Если панель становится видимой, обновляем графики
-        if (dashboardPanel.is(':visible')) {
-            // Применяем фильтры к данным
-            const filteredData = statsData.filter(function(stat) {
-                // Фильтр по дате
-                if (activeFilters.date && stat.date_log !== activeFilters.date) {
-                    return false;
-                }
-                
-                // Фильтр по ad_id
-                if (activeFilters.adId && stat.ad_id !== activeFilters.adId) {
-                    return false;
-                }
-                
-                // Фильтр по минимальному количеству кликов
-                if (activeFilters.minClicks && parseFloat(stat.fb_clicks || 0) < parseFloat(activeFilters.minClicks)) {
-                    return false;
-                }
-                
-                // Фильтр по минимальному количеству конверсий
-                if (activeFilters.minConversions && parseFloat(stat.regs || 0) < parseFloat(activeFilters.minConversions)) {
-                    return false;
-                }
-                
-                return true;
-            });
-            
-            updateDashboard(filteredData);
-        }
-    });
-    
-    // Обработчик для применения фильтров
-    $('#applyFilters').on('click', function() {
-        activeFilters.date = $('#dateFilter').val();
-        activeFilters.adId = $('#adIdFilter').val();
-        activeFilters.minClicks = $('#minClicksFilter').val();
-        activeFilters.minConversions = $('#minConversionsFilter').val();
-        
-        renderTable();
-    });
-    
-    // Обработчик для сброса фильтров
-    $('#resetFilters').on('click', function() {
-        $('#dateFilter').val('');
-        $('#adIdFilter').val('');
-        $('#minClicksFilter').val('');
-        $('#minConversionsFilter').val('');
-        
-        activeFilters = {
-            date: '',
-            adId: '',
-            minClicks: '',
-            minConversions: ''
-        };
-        
-        renderTable();
-    });
-    
-    // -----------------------------------------
-    // Управление колонками таблицы
-    // -----------------------------------------
-    
-    // Заполняем чекбоксы в модальном окне с возможностью перетаскивания
-    function populateColumnCheckboxes() {
-        const container = $('#columnCheckboxes');
-        container.empty();
-        
-        // Создаем массив объектов для всех колонок
-        const columnsData = allColumns.map(function(column) {
-            return {
-                name: column,
-                selected: selectedColumns.includes(column),
-                order: selectedColumns.indexOf(column) === -1 ? 9999 : selectedColumns.indexOf(column)
-            };
+    // Обработчик для чекбокса "Выбрать все"
+    const selectAllCheckbox = document.getElementById('selectAllColumns');
+    selectAllCheckbox.addEventListener('change', function() {
+        const columnCheckboxes = document.querySelectorAll('.column-checkbox');
+        columnCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
         });
-        
-        // Сортируем колонки: сначала выбранные в нужном порядке, затем остальные
-        columnsData.sort(function(a, b) {
-            if (a.selected && !b.selected) return -1;
-            if (!a.selected && b.selected) return 1;
-            return a.order - b.order;
-        });
-        
-        // Добавляем чекбоксы
-        columnsData.forEach(function(columnData) {
-            const div = $('<div>')
-                .addClass('column-checkbox-container')
-                .attr('data-column', columnData.name);
-            
-            // Добавляем иконку для перетаскивания
-            const dragHandle = $('<span>')
-                .addClass('drag-handle')
-                .html('<i class="fas fa-grip-vertical"></i>');
-            
-            const formCheck = $('<div>').addClass('form-check');
-            
-            const input = $('<input>')
-                .addClass('form-check-input column-checkbox')
-                .attr('type', 'checkbox')
-                .attr('id', 'column-' + columnData.name)
-                .attr('value', columnData.name)
-                .prop('checked', columnData.selected);
-            
-            // Добавляем обработчик изменения состояния чекбокса
-            input.on('change', function() {
-                // Если чекбокс отмечен, перемещаем его наверх списка
-                if ($(this).prop('checked')) {
-                    moveCheckboxToTop($(this).val());
-                }
-            });
-            
-            const label = $('<label>')
-                .addClass('form-check-label')
-                .attr('for', 'column-' + columnData.name)
-                .text(columnData.name);
-            
-            formCheck.append(input, label);
-            div.append(dragHandle, formCheck);
-            container.append(div);
-        });
-        
-        // Устанавливаем состояние чекбокса "Выбрать все"
-        $('#selectAllColumns').prop('checked', allColumns.length === selectedColumns.length);
-        
-        // Инициализируем возможность перетаскивания
-        initDragAndDrop();
-    }
-    
-    // Функция для перемещения выбранного чекбокса вверх списка
-    function moveCheckboxToTop(columnName) {
-        const columnContainers = $('#columnCheckboxes .column-checkbox-container');
-        const container = $('#columnCheckboxes');
-        
-        // Находим последний отмеченный элемент (перед первым неотмеченным)
-        let lastCheckedIndex = -1;
-        columnContainers.each(function(index) {
-            const isChecked = $(this).find('.column-checkbox').prop('checked');
-            if (!isChecked && lastCheckedIndex === -1) {
-                lastCheckedIndex = index - 1;
-                return false;
-            }
-        });
-        
-        // Если все элементы отмечены или нет отмеченных, используем 0 или последний индекс
-        if (lastCheckedIndex === -1) {
-            const allChecked = columnContainers.first().find('.column-checkbox').prop('checked');
-            lastCheckedIndex = allChecked ? columnContainers.length - 1 : 0;
-        }
-        
-        // Находим элемент для перемещения
-        const elementToMove = columnContainers.filter(function() {
-            return $(this).attr('data-column') === columnName;
-        });
-        
-        // Перемещаем элемент после последнего выбранного или в начало списка
-        if (lastCheckedIndex >= 0) {
-            if (lastCheckedIndex >= columnContainers.length - 1) {
-                // Если это последний элемент, добавляем в конец
-                container.append(elementToMove);
-            } else {
-                // Иначе вставляем после последнего отмеченного элемента
-                elementToMove.insertAfter(columnContainers.eq(lastCheckedIndex));
-            }
-        } else {
-            // Если нет отмеченных элементов, помещаем в начало
-            container.prepend(elementToMove);
-        }
-    }
-    
-    // Инициализация перетаскивания для изменения порядка колонок
-    function initDragAndDrop() {
-        const columnItems = document.querySelectorAll('.column-checkbox-container');
-        let draggedItem = null;
-        
-        columnItems.forEach(function(item) {
-            // Начало перетаскивания
-            item.addEventListener('dragstart', function() {
-                draggedItem = this;
-                setTimeout(function() {
-                    draggedItem.classList.add('dragging');
-                }, 0);
-            });
-            
-            // Конец перетаскивания
-            item.addEventListener('dragend', function() {
-                draggedItem.classList.remove('dragging');
-                draggedItem = null;
-            });
-            
-            // Разрешаем перетаскивание
-            item.setAttribute('draggable', 'true');
-            
-            // Обработка события при нахождении над элементом
-            item.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                if (draggedItem === this) return;
-                
-                const container = document.getElementById('columnCheckboxes');
-                const afterElement = getDragAfterElement(container, e.clientY);
-                
-                if (afterElement == null) {
-                    container.appendChild(draggedItem);
-                } else {
-                    container.insertBefore(draggedItem, afterElement);
-                }
-            });
-        });
-        
-        // Вспомогательная функция для определения позиции при перетаскивании
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.column-checkbox-container:not(.dragging)')];
-            
-            return draggableElements.reduce(function(closest, child) {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-    }
-    
-    // Обработчик для "Выбрать все"
-    $('#selectAllColumns').on('change', function() {
-        $('.column-checkbox').prop('checked', $(this).prop('checked'));
     });
     
     // Обработчик для кнопки "Сбросить"
-    $('#resetToDefaultColumns').on('click', function() {
-        // Отмечаем чекбоксы из шаблона
-        $('.column-checkbox').each(function() {
-            const columnName = $(this).val();
-            $(this).prop('checked', userDefaultColumns.includes(columnName));
+    const resetButton = document.getElementById('resetToDefaultColumns');
+    resetButton.addEventListener('click', function() {
+        const columnCheckboxes = document.querySelectorAll('.column-checkbox');
+        columnCheckboxes.forEach(checkbox => {
+            checkbox.checked = initialDefaultColumns.includes(checkbox.value);
         });
-        
-        // Обновляем чекбокс "Выбрать все"
-        $('#selectAllColumns').prop('checked', allColumns.length === userDefaultColumns.length);
-        
-        // Перезаполняем чекбоксы для восстановления порядка из шаблона
-        populateColumnCheckboxes();
+        selectAllCheckbox.checked = false;
     });
     
     // Обработчик для кнопки "Сохранить как шаблон"
-    $('#saveAsDefaultColumns').on('click', function() {
-        const newDefaultColumns = [];
+    const saveAsDefaultButton = document.getElementById('saveAsDefaultColumns');
+    saveAsDefaultButton.addEventListener('click', function() {
+        const selectedCheckboxes = document.querySelectorAll('.column-checkbox:checked');
+        const selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
         
-        // Собираем выбранные колонки в том порядке, в котором они отображаются в модальном окне
-        $('#columnCheckboxes .column-checkbox-container').each(function() {
-            const checkbox = $(this).find('.column-checkbox');
-            if (checkbox.prop('checked')) {
-                newDefaultColumns.push(checkbox.val());
+        localStorage.setItem('fbStatsDefaultColumns', JSON.stringify(selectedValues));
+        alert('Настройки сохранены как шаблон по умолчанию');
+    });
+    
+    // Обработчик для кнопки "Применить"
+    const saveButton = document.getElementById('saveColumnSelection');
+    saveButton.addEventListener('click', function() {
+        // Собираем выбранные колонки в порядке их расположения
+        const columnContainers = document.querySelectorAll('.column-checkbox-container');
+        selectedColumns = [];
+        
+        columnContainers.forEach(container => {
+            const checkbox = container.querySelector('.column-checkbox');
+            if (checkbox.checked) {
+                selectedColumns.push(checkbox.value);
             }
         });
         
-        // Если ничего не выбрано, показываем сообщение и не применяем изменения
-        if (newDefaultColumns.length === 0) {
-            alert('Выберите хотя бы одну колонку для шаблона');
-            return;
-        }
+        // Сохраняем выбранные колонки
+        localStorage.setItem('fbStatsColumnSettings', JSON.stringify(selectedColumns));
         
-        // Сохраняем шаблон в localStorage
-        localStorage.setItem('fbStatsDefaultColumns', JSON.stringify(newDefaultColumns));
-        userDefaultColumns = newDefaultColumns;
-        
-        // Показываем сообщение об успешном сохранении
-        alert('Шаблон колонок успешно сохранен');
+        // Перестраиваем таблицу
+        buildTable();
     });
     
-    // Сохранение выбора колонок с учетом порядка
-    $('#saveColumnSelection').on('click', function() {
-        const newSelectedColumns = [];
-        
-        // Собираем выбранные колонки в том порядке, в котором они отображаются в модальном окне
-        $('#columnCheckboxes .column-checkbox-container').each(function() {
-            const checkbox = $(this).find('.column-checkbox');
-            if (checkbox.prop('checked')) {
-                newSelectedColumns.push(checkbox.val());
-            }
-        });
-        
-        // Если ничего не выбрано, показываем сообщение и не применяем изменения
-        if (newSelectedColumns.length === 0) {
-            alert('Выберите хотя бы одну колонку');
-            return;
-        }
-        
-        // Сохраняем выбор в localStorage
-        localStorage.setItem('fbStatsColumns', JSON.stringify(newSelectedColumns));
-        
-        // Обновляем выбранные колонки и перерисовываем таблицу
-        selectedColumns = newSelectedColumns;
-        renderTable();
-    });
-    
-    // Инициализация модального окна
-    $('#columnSelectionModal').on('show.bs.modal', function() {
-        populateColumnCheckboxes();
-    });
-    
-    // Инициализация страницы
-    renderTable();
+    // Инициализация
+    buildTable();
+    buildColumnSelectionModal();
 });
 </script>
 {% endblock %} 

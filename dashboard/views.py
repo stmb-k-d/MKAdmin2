@@ -5,6 +5,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import json
 import sys
+from datetime import datetime, timedelta
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 
 def get_menu_items():
     return [
@@ -78,12 +81,16 @@ def accs_view(request):
         cursor.execute('SELECT * FROM accs_data')
         columns = [col[0] for col in cursor.description]
         accounts = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        # Получаем список всех колонок для выбора пользователем
+        all_columns = columns
     
     return render(request, 'dashboard/accs.html', {
         'menu_items': get_menu_items(),
         'title': 'Аккаунты',
         'page_title': 'Управление аккаунтами',
-        'accounts': accounts
+        'accounts': accounts,
+        'all_columns': json.dumps(all_columns)
     })
 
 def accs_detail(request, account_id):
@@ -323,126 +330,276 @@ def working_log(request):
 
 def facebook_stats_view(request):
     """
-    Отображает демо-данные для статистики Facebook
-    из-за проблем с доступом к таблице ad_data_daily
+    Отображает данные статистики Facebook из таблицы ad_data_daily
     """
-    import sys
-    print("================ НАЧАЛО ФУНКЦИИ FACEBOOK_STATS_VIEW (УПРОЩЕННАЯ) ================", file=sys.stderr)
-    
-    # Принудительно создаем демо-данные без попыток проверить таблицу
-    return generate_demo_stats_data(request, ["Принудительно загружены демо-данные для демонстрации функциональности"])
-
-def generate_demo_stats_data(request, errors=None):
-    """
-    Создает демонстрационные данные для отображения на странице статистики
-    
-    Args:
-        request: HTTP-запрос
-        errors: список ошибок для отображения на странице
-    """
-    import random
-    import sys
-    from datetime import datetime, timedelta
-    
-    print("================ НАЧАЛО ГЕНЕРАЦИИ ДЕМО-ДАННЫХ ================", file=sys.stderr)
-    
-    # Создаем список колонок, аналогичный структуре таблицы ad_data_daily
-    columns = [
-        'id', 'date_log', 'ad_id', 'fb_spend', 'fb_impressions', 'fb_clicks', 
-        'fb_ctr', 'fb_cpc', 'fb_cpm', 'fb_link_click', 'fb_cost_per_unique_click',
-        'kt_unic_clicks', 'c2i', 'cr2i', 'cpi', 'regs', 'cr2r', 'i2r', 'cpr',
-        'cr2d', 'r2s', 'cps', 'deps', 'income', 'bprofit', 'broi'
-    ]
-    
-    # Создаем 10 случайных ad_id
-    ad_ids = [f"2318900{i}556{i+2}" for i in range(10)]
-    
-    # Создаем даты за последние 30 дней
-    end_date = datetime.now()
-    dates = [(end_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(30)]
-    
-    # Создаем демо-данные
-    stats_data = []
-    id_counter = 1
-    
-    print(f"Генерируем данные для {len(ad_ids)} объявлений и {len(dates)} дат", file=sys.stderr)
-    
-    for ad_id in ad_ids:
-        for date in dates:
-            # Базовые метрики
-            spend = round(random.uniform(10, 100), 2)
-            impressions = random.randint(1000, 10000)
-            clicks = random.randint(10, impressions // 50)
+    try:
+        # Получаем параметры фильтрации по датам из запроса
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        
+        # Проверяем существование таблицы
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'ad_data_daily'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
             
-            # Расчетные метрики
-            ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
-            cpc = round(spend / clicks, 2) if clicks > 0 else 0
-            cpm = round((spend / impressions) * 1000, 2) if impressions > 0 else 0
+            if not table_exists:
+                return render(request, 'dashboard/facebook_stats.html', {
+                    'error': 'Таблица ad_data_daily не существует. Создайте таблицу с помощью скрипта create_ad_data_daily.sql',
+                    'menu_items': get_menu_items(),
+                    'title': 'Facebook Statistics',
+                    'page_title': 'Статистика Facebook'
+                })
             
-            link_clicks = int(clicks * random.uniform(0.8, 1.0))
-            cost_per_unique_click = round(spend / (link_clicks * random.uniform(0.8, 0.95)), 2) if link_clicks > 0 else 0
+            # Получаем список колонок
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'ad_data_daily'
+                ORDER BY ordinal_position;
+            """)
+            columns = [row[0] for row in cursor.fetchall()]
             
-            kt_unic_clicks = int(link_clicks * random.uniform(0.8, 0.95))
-            c2i = int(kt_unic_clicks * random.uniform(0.1, 0.4))
-            cr2i = round((c2i / kt_unic_clicks) * 100, 2) if kt_unic_clicks > 0 else 0
-            cpi = round(spend / c2i, 2) if c2i > 0 else 0
+            # Строим SQL запрос с учетом фильтрации по датам
+            sql = "SELECT * FROM ad_data_daily"
+            params = []
+            where_conditions = []
             
-            regs = int(c2i * random.uniform(0.5, 0.9))
-            cr2r = round((regs / clicks) * 100, 2) if clicks > 0 else 0
-            i2r = round((regs / c2i) * 100, 2) if c2i > 0 else 0
-            cpr = round(spend / regs, 2) if regs > 0 else 0
+            if date_from:
+                where_conditions.append("date_log >= %s")
+                params.append(date_from)
             
-            deps = int(regs * random.uniform(0.1, 0.4))
-            cr2d = round((deps / clicks) * 100, 2) if clicks > 0 else 0
-            r2s = round((deps / regs) * 100, 2) if regs > 0 else 0
-            cps = round(spend / deps, 2) if deps > 0 else 0
+            if date_to:
+                where_conditions.append("date_log <= %s")
+                params.append(date_to)
             
-            income = round(deps * random.uniform(50, 200), 2)
-            bprofit = round(income - spend, 2)
-            broi = round((bprofit / spend) * 100, 2) if spend > 0 else 0
+            if where_conditions:
+                sql += " WHERE " + " AND ".join(where_conditions)
             
-            # Создаем запись
-            stats_data.append({
-                'id': id_counter,
-                'date_log': date,
-                'ad_id': ad_id,
-                'fb_spend': spend,
-                'fb_impressions': impressions,
-                'fb_clicks': clicks,
-                'fb_ctr': ctr,
-                'fb_cpc': cpc,
-                'fb_cpm': cpm,
-                'fb_link_click': link_clicks,
-                'fb_cost_per_unique_click': cost_per_unique_click,
-                'kt_unic_clicks': kt_unic_clicks,
-                'c2i': c2i,
-                'cr2i': cr2i,
-                'cpi': cpi,
-                'regs': regs,
-                'cr2r': cr2r,
-                'i2r': i2r,
-                'cpr': cpr,
-                'cr2d': cr2d,
-                'r2s': r2s,
-                'cps': cps,
-                'deps': deps,
-                'income': income,
-                'bprofit': bprofit,
-                'broi': broi
+            sql += " ORDER BY date_log DESC LIMIT 1000"
+            
+            # Выполняем запрос
+            cursor.execute(sql, params)
+            
+            data = []
+            for row in cursor.fetchall():
+                item = {}
+                for i, col in enumerate(columns):
+                    # Форматирование данных
+                    if col == 'date_log' and row[i]:
+                        item[col] = row[i].strftime('%Y-%m-%d')
+                    elif col in ['fb_ctr', 'fb_cr'] and row[i]:
+                        item[col] = f"{float(row[i]):.2%}"
+                    elif col in ['fb_spend', 'fb_cpm', 'fb_cpc'] and row[i]:
+                        item[col] = f"{float(row[i]):.2f}"
+                    else:
+                        item[col] = row[i]
+                data.append(item)
+            
+            return render(request, 'dashboard/facebook_stats.html', {
+                'data': data,
+                'columns': columns,
+                'menu_items': get_menu_items(),
+                'title': 'Facebook Statistics',
+                'page_title': 'Статистика Facebook',
+                'date_from': date_from,
+                'date_to': date_to
             })
-            id_counter += 1
-    
-    print(f"Сгенерировано {len(stats_data)} записей", file=sys.stderr)
-    print("================ КОНЕЦ ГЕНЕРАЦИИ ДЕМО-ДАННЫХ ================", file=sys.stderr)
-    
-    return render(request, 'dashboard/facebook_stats.html', {
-        'menu_items': get_menu_items(),
-        'title': 'Facebook Stats (Demo)',
-        'page_title': 'Статистика Facebook (Демо-данные)',
-        'stats_data': stats_data,
-        'columns': columns,
-        'dates': dates,
-        'ad_ids': ad_ids,
-        'is_demo': True,
-        'errors': errors
-    })
+            
+    except Exception as e:
+        return render(request, 'dashboard/facebook_stats.html', {
+            'error': f'Ошибка при получении данных: {str(e)}',
+            'menu_items': get_menu_items(),
+            'title': 'Facebook Statistics',
+            'page_title': 'Статистика Facebook'
+        })
+
+def get_facebook_stats_data(request):
+    """
+    API для получения отфильтрованных и сгруппированных данных из таблицы ad_data_daily
+    """
+    try:
+        filters = json.loads(request.GET.get('filters', '{}'))
+        group_by = request.GET.getlist('group_by', [])
+        aggregation_type = request.GET.get('aggregation_type', 'sum')
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        
+        # Валидация параметров
+        valid_aggregation_types = ['sum', 'avg', 'min', 'max', 'count']
+        if aggregation_type not in valid_aggregation_types:
+            return JsonResponse({'error': 'Неверный тип агрегации'})
+        
+        # Строим SQL запрос
+        select_clause = []
+        group_clause = []
+        where_conditions = []
+        aggregation_metrics = [
+            'fb_spend', 'fb_impressions', 'fb_clicks', 'fb_cpm', 'fb_cpc', 'fb_ctr', 
+            'fb_actions', 'fb_cr', 'fb_cpa'
+        ]
+        
+        # Добавляем поля группировки
+        for field in group_by:
+            select_clause.append(f"{field}")
+            group_clause.append(f"{field}")
+        
+        # Если группировка не указана, выбираем все столбцы
+        if not group_by:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'ad_data_daily'
+                    ORDER BY ordinal_position;
+                """)
+                columns = [row[0] for row in cursor.fetchall()]
+                select_clause = columns
+        else:
+            # Добавляем агрегации
+            for metric in aggregation_metrics:
+                if aggregation_type == 'sum':
+                    select_clause.append(f"SUM({metric}) as {metric}")
+                elif aggregation_type == 'avg':
+                    select_clause.append(f"AVG({metric}) as {metric}")
+                elif aggregation_type == 'min':
+                    select_clause.append(f"MIN({metric}) as {metric}")
+                elif aggregation_type == 'max':
+                    select_clause.append(f"MAX({metric}) as {metric}")
+                elif aggregation_type == 'count':
+                    select_clause.append(f"COUNT({metric}) as {metric}")
+        
+        # Фильтр по дате
+        if date_from:
+            where_conditions.append(f"date_log >= '{date_from}'")
+        if date_to:
+            where_conditions.append(f"date_log <= '{date_to}'")
+        
+        # Добавляем фильтры
+        for column, conditions in filters.items():
+            for condition in conditions:
+                operator = condition['operator']
+                value = condition['value']
+                
+                if operator == 'eq':
+                    where_conditions.append(f"{column} = '{value}'")
+                elif operator == 'neq':
+                    where_conditions.append(f"{column} != '{value}'")
+                elif operator == 'gt':
+                    where_conditions.append(f"{column} > {value}")
+                elif operator == 'lt':
+                    where_conditions.append(f"{column} < {value}")
+                elif operator == 'gte':
+                    where_conditions.append(f"{column} >= {value}")
+                elif operator == 'lte':
+                    where_conditions.append(f"{column} <= {value}")
+                elif operator == 'contains':
+                    where_conditions.append(f"{column} LIKE '%{value}%'")
+                elif operator == 'in':
+                    values = [v.strip() for v in value.split(',')]
+                    values_str = "'" + "','".join(values) + "'"
+                    where_conditions.append(f"{column} IN ({values_str})")
+        
+        # Соединяем всё вместе в SQL запрос
+        sql = f"SELECT {', '.join(select_clause)} FROM ad_data_daily"
+        
+        if where_conditions:
+            sql += f" WHERE {' AND '.join(where_conditions)}"
+        
+        if group_clause:
+            sql += f" GROUP BY {', '.join(group_clause)}"
+        
+        sql += " ORDER BY " + (f"{group_by[0]}" if group_by else "date_log") + " DESC LIMIT 5000"
+        
+        # Выполняем запрос
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            columns = [col[0] for col in cursor.description]
+            
+            data = []
+            for row in cursor.fetchall():
+                item = {}
+                for i, col in enumerate(columns):
+                    # Форматирование данных
+                    if col == 'date_log' and row[i]:
+                        item[col] = row[i].strftime('%Y-%m-%d')
+                    elif col in ['fb_ctr', 'fb_cr'] and row[i]:
+                        item[col] = f"{float(row[i]):.2%}"
+                    elif col in ['fb_spend', 'fb_cpm', 'fb_cpc', 'fb_cpa'] and row[i]:
+                        item[col] = f"{float(row[i]):.2f}"
+                    else:
+                        item[col] = row[i]
+                data.append(item)
+            
+            return JsonResponse({
+                'data': data,
+                'columns': columns
+            })
+            
+    except Exception as e:
+        return JsonResponse({'error': f'Ошибка при получении данных: {str(e)}'})
+
+def get_facebook_stats_chart_data(request):
+    """
+    API для получения данных для графиков статистики с поддержкой множественных метрик
+    """
+    try:
+        # Поддержка нескольких метрик
+        metrics = request.GET.getlist('metrics', ['fb_spend'])
+        # Обратная совместимость с single метрикой
+        if not metrics and request.GET.get('metric'):
+            metrics = [request.GET.get('metric')]
+            
+        group_by = request.GET.get('group_by', 'date_log')
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        
+        # Фильтры
+        where_conditions = []
+        if date_from:
+            where_conditions.append(f"date_log >= '{date_from}'")
+        if date_to:
+            where_conditions.append(f"date_log <= '{date_to}'")
+        
+        # Строим SQL запрос с несколькими метриками
+        select_clause = [f"{group_by} as label"]
+        for metric in metrics:
+            select_clause.append(f"SUM({metric}) as {metric}")
+        
+        sql = f"""
+            SELECT {', '.join(select_clause)}
+            FROM ad_data_daily
+        """
+        
+        if where_conditions:
+            sql += f" WHERE {' AND '.join(where_conditions)}"
+        
+        sql += f" GROUP BY {group_by} ORDER BY {group_by} ASC LIMIT 50"
+        
+        # Выполняем запрос
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            columns = [col[0] for col in cursor.description]
+            
+            data = []
+            for row in cursor.fetchall():
+                item = {}
+                for i, col in enumerate(columns):
+                    # Форматирование даты
+                    if col == 'label' and row[i] and hasattr(row[i], 'strftime'):
+                        item[col] = row[i].strftime('%Y-%m-%d')
+                    else:
+                        # Конвертация чисел в float для JSON сериализации
+                        item[col] = float(row[i]) if row[i] is not None else 0
+                data.append(item)
+            
+            return JsonResponse({
+                'data': data
+            })
+            
+    except Exception as e:
+        return JsonResponse({'error': f'Ошибка при получении данных для графика: {str(e)}'})

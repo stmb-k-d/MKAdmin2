@@ -1,0 +1,70 @@
+-- Создание таблицы ad_data_daily, если она не существует
+CREATE TABLE IF NOT EXISTS ad_data_daily (
+    id SERIAL PRIMARY KEY,
+    date DATE NOT NULL,
+    ad_id VARCHAR(50) NOT NULL,
+    camp_id VARCHAR(50),
+    adset_id VARCHAR(50),
+    fb_spend DECIMAL(10, 2) DEFAULT 0,
+    fb_impressions INTEGER DEFAULT 0,
+    fb_clicks INTEGER DEFAULT 0,
+    fb_ctr DECIMAL(6, 2) DEFAULT 0,
+    fb_cpc DECIMAL(10, 2) DEFAULT 0,
+    fb_cpm DECIMAL(10, 2) DEFAULT 0,
+    fb_link_click INTEGER DEFAULT 0,
+    fb_cost_per_unique_click DECIMAL(10, 2) DEFAULT 0,
+    kt_unic_clicks INTEGER DEFAULT 0,
+    c2i INTEGER DEFAULT 0,
+    cr2i DECIMAL(6, 2) DEFAULT 0,
+    cpi DECIMAL(10, 2) DEFAULT 0,
+    regs INTEGER DEFAULT 0,
+    cr2r DECIMAL(6, 2) DEFAULT 0,
+    i2r DECIMAL(6, 2) DEFAULT 0,
+    cpr DECIMAL(10, 2) DEFAULT 0,
+    cr2d DECIMAL(6, 2) DEFAULT 0,
+    r2s DECIMAL(6, 2) DEFAULT 0,
+    cps DECIMAL(10, 2) DEFAULT 0,
+    deps INTEGER DEFAULT 0,
+    income DECIMAL(10, 2) DEFAULT 0,
+    bprofit DECIMAL(10, 2) DEFAULT 0,
+    broi DECIMAL(10, 2) DEFAULT 0,
+    date_log DATE
+);
+
+-- Удаление тестовых данных, если они существуют (для избежания дублирования)
+DELETE FROM ad_data_daily;
+
+-- Вставка тестовых данных (последние 90 дней для 5 разных объявлений)
+INSERT INTO ad_data_daily (date, ad_id, camp_id, adset_id, fb_spend, fb_impressions, fb_clicks, fb_ctr, fb_cpc, fb_cpm, 
+                          fb_link_click, fb_cost_per_unique_click, kt_unic_clicks, c2i, cr2i, cpi, regs, cr2r, i2r, cpr, 
+                          cr2d, r2s, cps, deps, income, bprofit, broi, date_log)
+SELECT 
+    (CURRENT_DATE - (i || ' days')::INTERVAL)::DATE as date,
+    'ad_' || (random() * 5 + 1)::INT as ad_id,
+    'camp_' || (random() * 3 + 1)::INT as camp_id,
+    'adset_' || (random() * 7 + 1)::INT as adset_id,
+    (random() * 100)::DECIMAL(10,2) as fb_spend,
+    (random() * 10000)::INT as fb_impressions,
+    (random() * 200)::INT as fb_clicks,
+    (random() * 5)::DECIMAL(6,2) as fb_ctr,
+    (random() * 2)::DECIMAL(10,2) as fb_cpc,
+    (random() * 15)::DECIMAL(10,2) as fb_cpm,
+    (random() * 180)::INT as fb_link_click,
+    (random() * 2.5)::DECIMAL(10,2) as fb_cost_per_unique_click,
+    (random() * 160)::INT as kt_unic_clicks,
+    (random() * 50)::INT as c2i,
+    (random() * 30)::DECIMAL(6,2) as cr2i,
+    (random() * 5)::DECIMAL(10,2) as cpi,
+    (random() * 40)::INT as regs,
+    (random() * 25)::DECIMAL(6,2) as cr2r,
+    (random() * 80)::DECIMAL(6,2) as i2r,
+    (random() * 8)::DECIMAL(10,2) as cpr,
+    (random() * 15)::DECIMAL(6,2) as cr2d,
+    (random() * 50)::DECIMAL(6,2) as r2s,
+    (random() * 20)::DECIMAL(10,2) as cps,
+    (random() * 15)::INT as deps,
+    (random() * 500)::DECIMAL(10,2) as income,
+    (random() * 300 - 100)::DECIMAL(10,2) as bprofit,
+    (random() * 200 - 50)::DECIMAL(10,2) as broi,
+    (CURRENT_DATE - (i || ' days')::INTERVAL)::DATE as date_log
+FROM generate_series(0, 89) as i; 
