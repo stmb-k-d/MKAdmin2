@@ -85,11 +85,14 @@ def accs_view(request):
         # Получаем список всех колонок для выбора пользователем
         all_columns = columns
     
+    # Сериализуем данные аккаунтов в JSON для передачи в шаблон
+    accounts_json = json.dumps(accounts, default=str)
+    
     return render(request, 'dashboard/accs.html', {
         'menu_items': get_menu_items(),
         'title': 'Аккаунты',
         'page_title': 'Управление аккаунтами',
-        'accounts': accounts,
+        'accounts_json': accounts_json,
         'all_columns': json.dumps(all_columns)
     })
 

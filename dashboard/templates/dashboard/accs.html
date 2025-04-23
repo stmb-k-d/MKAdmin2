@@ -269,15 +269,8 @@ function highlightRow(row, event) {
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Подготовим данные для таблицы
-    const accountsData = [];
-    {% for account in accounts %}
-    accountsData.push({
-        {% for key, value in account.items %}
-        "{{ key }}": {% if value != None %}"{{ value|escapejs }}"{% else %}null{% endif %},
-        {% endfor %}
-    });
-    {% endfor %}
+    // Подготовим данные для таблицы и колонки из сериализованных JSON-объектов
+    const accountsData = JSON.parse('{{ accounts_json|escapejs }}');
     
     // Загружаем все доступные колонки
     const allColumns = JSON.parse('{{ all_columns|escapejs }}');
@@ -411,6 +404,11 @@ $(document).ready(function() {
             label.htmlFor = `col-${column}`;
             label.textContent = column;
             
+            // Добавляем обработчик события change для автоматического перемещения выбранных колонок вверх
+            checkbox.addEventListener('change', function() {
+                sortCheckedColumnsToTop();
+            });
+            
             formCheck.appendChild(checkbox);
             formCheck.appendChild(label);
             
@@ -422,6 +420,9 @@ $(document).ready(function() {
         
         // Делаем колонки перетаскиваемыми
         setupDragAndDrop();
+        
+        // Сортируем список, чтобы выбранные были сверху
+        sortCheckedColumnsToTop();
     }
     
     // Функция для настройки drag-and-drop
@@ -610,6 +611,35 @@ $(document).ready(function() {
         // Перестраиваем таблицу
         buildTable();
     });
+    
+    // Функция для сортировки колонок - выбранные вверху
+    function sortCheckedColumnsToTop() {
+        const parent = document.getElementById('columnCheckboxes');
+        const checkboxes = parent.querySelectorAll('.column-checkbox-container');
+        const checked = [];
+        const unchecked = [];
+        
+        checkboxes.forEach(container => {
+            const checkbox = container.querySelector('.column-checkbox');
+            if (checkbox.checked) {
+                checked.push(container);
+            } else {
+                unchecked.push(container);
+            }
+        });
+        
+        // Очищаем родительский элемент
+        parent.innerHTML = '';
+        
+        // Добавляем обратно элементы
+        checked.forEach(container => {
+            parent.appendChild(container);
+        });
+        
+        unchecked.forEach(container => {
+            parent.appendChild(container);
+        });
+    }
     
     // Инициализация
     buildTable();

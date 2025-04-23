@@ -550,12 +550,15 @@ $(document).ready(function() {
             tableBody.appendChild(tr);
         });
         
-        // Добавляем итоговую строку
         addTotalRow();
     }
     
     // Функция для создания итоговой строки
     function addTotalRow() {
+        const tableBody = document.getElementById('tableBody');
+        const totalRow = document.createElement('tr');
+        totalRow.classList.add('total-row');
+        
         // Суммируемые поля
         const sumFields = [
             'fb_impressions', 'fb_spend', 'fb_link_click', 'fb_video_view', 
@@ -579,11 +582,6 @@ $(document).ready(function() {
                 }
             });
         });
-        
-        // Создаем итоговую строку
-        const tableBody = document.getElementById('tableBody');
-        const totalRow = document.createElement('tr');
-        totalRow.classList.add('total-row');
         
         // Создаем ячейки итоговой строки
         selectedColumns.forEach(column => {
@@ -638,11 +636,6 @@ $(document).ready(function() {
             checkbox.checked = selectedColumns.includes(column);
             checkbox.value = column;
             
-            // Добавляем обработчик события change для автоматического перемещения выбранных колонок вверх
-            checkbox.addEventListener('change', function() {
-                setTimeout(function() { sortCheckedColumnsToTop(); }, 0);
-            });
-            
             const label = document.createElement('label');
             label.className = 'form-check-label';
             label.htmlFor = `col-${column}`;
@@ -659,9 +652,6 @@ $(document).ready(function() {
         
         // Делаем колонки перетаскиваемыми
         setupDragAndDrop();
-        
-        // Сортируем список, чтобы выбранные были сверху
-        sortCheckedColumnsToTop();
     }
     
     // Функция для настройки drag-and-drop
@@ -838,42 +828,6 @@ $(document).ready(function() {
         // Перестраиваем таблицу
         buildTable();
     });
-    
-    // Функция для сортировки колонок - выбранные вверху
-    function sortCheckedColumnsToTop() {
-        var containers = document.querySelectorAll('.column-checkbox-container');
-        if (containers.length === 0) return;
-        
-        var parent = containers[0].parentNode;
-        
-        // Собираем выбранные и невыбранные контейнеры
-        var checked = [];
-        var unchecked = [];
-        
-        for (var i = 0; i < containers.length; i++) {
-            var container = containers[i];
-            var checkbox = container.querySelector('.column-checkbox');
-            if (checkbox && checkbox.checked) {
-                checked.push(container);
-            } else {
-                unchecked.push(container);
-            }
-        }
-        
-        // Удаляем все контейнеры
-        while (parent.querySelector('.column-checkbox-container')) {
-            parent.removeChild(parent.querySelector('.column-checkbox-container'));
-        }
-        
-        // Добавляем сначала выбранные, потом невыбранные
-        for (var j = 0; j < checked.length; j++) {
-            parent.appendChild(checked[j]);
-        }
-        
-        for (var k = 0; k < unchecked.length; k++) {
-            parent.appendChild(unchecked[k]);
-        }
-    }
     
     // Инициализация
     buildTable();
