@@ -107,7 +107,7 @@
     #statsTable {
         font-size: 0.65rem;
         width: 100%;
-        table-layout: fixed;
+        table-layout: auto;
         border-collapse: collapse;
     }
     
@@ -230,6 +230,42 @@
     .column-buttons {
         margin-left: 10px;
     }
+    
+    /* Стили для блока с фильтрами и управлением */
+    .table-controls-block {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        padding: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .table-controls-block .refresh-btn {
+        margin-left: 15px;
+    }
+    
+    /* Стили для колонок с полным отображением содержимого */
+    .width-auto-column {
+        min-width: 120px !important;
+        width: auto !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: initial !important;
+    }
+    
+    /* Специальные стили для колонок ad_id и last_update */
+    #statsTable th.column-ad_id,
+    #statsTable td.column-ad_id,
+    #statsTable th.column-last_update,
+    #statsTable td.column-last_update {
+        min-width: 120px;
+        width: auto !important;
+        max-width: none !important; 
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        flex-shrink: 0;
+    }
 </style>
 {% endblock %}
 
@@ -239,31 +275,40 @@
         <div class="d-flex align-items-center">
             <h5 class="mb-0 me-3">Статистика Facebook</h5>
         </div>
-        <div class="d-flex">
-            <div class="date-filter me-3">
-                <div class="input-group">
-                    <input type="date" id="dateFrom" class="form-control form-control-sm" placeholder="С">
-                    <span class="input-group-text">—</span>
-                    <input type="date" id="dateTo" class="form-control form-control-sm" placeholder="По">
-                    <button id="applyDateFilter" class="btn btn-sm btn-primary">
-                        <i class="fas fa-filter"></i>
-                    </button>
-                    <button id="resetDateFilter" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-times"></i>
+    </div>
+    <div class="card-body">
+        <!-- Новый блок с фильтрами и управлением -->
+        <div class="table-controls-block">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div class="d-flex flex-wrap align-items-center">
+                    <div class="date-filter me-3">
+                        <div class="input-group">
+                            <input type="date" id="dateFrom" class="form-control form-control-sm" placeholder="С">
+                            <span class="input-group-text">—</span>
+                            <input type="date" id="dateTo" class="form-control form-control-sm" placeholder="По">
+                            <button id="applyDateFilter" class="btn btn-sm btn-primary">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button id="resetDateFilter" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="column-buttons me-3">
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
+                            <i class="fas fa-columns"></i> Настроить колонки
+                        </button>
+                    </div>
+                    <button id="refreshTable" class="btn btn-success btn-sm refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Обновить таблицу
                     </button>
                 </div>
-            </div>
-            <div class="column-buttons me-2">
-                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
-                    <i class="fas fa-columns"></i> Настроить колонки
-                </button>
-            </div>
-            <div>
-                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
+                <div>
+                    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
+                </div>
             </div>
         </div>
-    </div>
-    <div class="card-body p-0">
+        
         {% if error %}
         <div class="alert alert-danger m-3">
             {{ error }}
@@ -398,6 +443,7 @@ $(document).ready(function() {
     const dateTo = document.getElementById('dateTo');
     const applyDateFilter = document.getElementById('applyDateFilter');
     const resetDateFilter = document.getElementById('resetDateFilter');
+    const refreshTableBtn = document.getElementById('refreshTable');
     
     // Установка начальных значений дат (последний месяц)
     const today = new Date();
@@ -456,6 +502,88 @@ $(document).ready(function() {
         window.location.href = currentUrl.toString();
     });
 
+    // Обработчик для кнопки "Обновить таблицу"
+    refreshTableBtn.addEventListener('click', function() {
+        // Показываем индикатор загрузки в кнопке
+        const originalContent = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
+        this.disabled = true;
+        
+        // Получаем текущие параметры фильтров
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateFrom = urlParams.get('date_from') || '';
+        const dateTo = urlParams.get('date_to') || '';
+        
+        // Формируем URL для AJAX запроса
+        let apiUrl = '{% url 'dashboard:facebook_stats' %}';
+        if (dateFrom || dateTo) {
+            apiUrl = `${apiUrl}?date_from=${dateFrom}&date_to=${dateTo}`;
+        }
+        
+        // Выполняем AJAX запрос для получения обновленных данных
+        fetch(apiUrl)
+            .then(response => response.text())
+            .then(html => {
+                // Создаем временный DOM для обработки HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Извлекаем данные из ответа (используем скрипт со страницы)
+                const scriptContent = Array.from(doc.querySelectorAll('script'))
+                    .find(script => script.textContent.includes('const statsData = ['));
+                
+                if (scriptContent) {
+                    // Выполняем скрипт для получения данных
+                    eval(scriptContent.textContent);
+                    
+                    // Перестраиваем таблицу с новыми данными
+                    buildTable();
+                    
+                    // Показываем анимацию успешного обновления в кнопке
+                    this.classList.add('btn-success');
+                    this.classList.remove('btn-sm');
+                    this.innerHTML = '<i class="fas fa-check"></i> Обновлено';
+                    
+                    // Через 1.5 секунды возвращаем кнопку в исходное состояние
+                    setTimeout(() => {
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-sm');
+                    }, 1500);
+                } else {
+                    // В случае ошибки показываем соответствующую иконку
+                    this.classList.add('btn-danger');
+                    this.classList.remove('btn-sm');
+                    this.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
+                    
+                    // Через 1.5 секунды возвращаем кнопку в исходное состояние
+                    setTimeout(() => {
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                        this.classList.remove('btn-danger');
+                        this.classList.add('btn-sm');
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при обновлении данных:', error);
+                
+                // Показываем ошибку в кнопке
+                this.classList.add('btn-danger');
+                this.classList.remove('btn-sm');
+                this.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
+                
+                // Через 1.5 секунды возвращаем кнопку в исходное состояние
+                setTimeout(() => {
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('btn-danger');
+                    this.classList.add('btn-sm');
+                }, 1500);
+            });
+    });
+    
     // Подготовим данные для таблицы
     const statsData = [
     {% for item in data %}
@@ -511,6 +639,14 @@ $(document).ready(function() {
             const th = document.createElement('th');
             th.textContent = column;
             th.className = 'sorting';
+            
+            // Добавляем специальные классы для колонок ad_id и last_update
+            if (column === 'ad_id') {
+                th.classList.add('column-ad_id');
+            } else if (column === 'last_update') {
+                th.classList.add('column-last_update');
+            }
+            
             th.addEventListener('click', () => sortTable(column));
             tableHeader.appendChild(th);
         });
@@ -523,6 +659,13 @@ $(document).ready(function() {
             selectedColumns.forEach(column => {
                 const td = document.createElement('td');
                 
+                // Добавляем специальные классы для колонок ad_id и last_update
+                if (column === 'ad_id') {
+                    td.classList.add('column-ad_id');
+                } else if (column === 'last_update') {
+                    td.classList.add('column-last_update');
+                }
+                
                 const value = item[column];
                 
                 // Создаем ссылку для колонки ad_id
@@ -532,6 +675,29 @@ $(document).ready(function() {
                     link.className = 'text-primary';
                     link.textContent = value;
                     td.appendChild(link);
+                } else if (column === 'last_update' && value && value !== '-') {
+                    // Форматируем дату для колонки last_update в формат "2025-04-24 14:34:34"
+                    try {
+                        // Пытаемся преобразовать строку в объект даты
+                        const dateObj = new Date(value);
+                        if (!isNaN(dateObj.getTime())) {
+                            // Форматируем дату в нужный формат
+                            const year = dateObj.getFullYear();
+                            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                            const day = String(dateObj.getDate()).padStart(2, '0');
+                            const hours = String(dateObj.getHours()).padStart(2, '0');
+                            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                            const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+                            
+                            const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                            td.textContent = formattedDate;
+                        } else {
+                            td.textContent = value;
+                        }
+                    } catch (e) {
+                        // Если возникла ошибка при парсинге даты, оставляем исходное значение
+                        td.textContent = value;
+                    }
                 } else {
                     td.textContent = value !== null ? value : '-';
                 }
@@ -598,6 +764,13 @@ $(document).ready(function() {
         // Создаем ячейки итоговой строки
         selectedColumns.forEach(column => {
             const td = document.createElement('td');
+            
+            // Добавляем специальные классы для колонок ad_id и last_update
+            if (column === 'ad_id') {
+                td.classList.add('column-ad_id');
+            } else if (column === 'last_update') {
+                td.classList.add('column-last_update');
+            }
             
             if (column === 'date_log' || column === selectedColumns[0]) {
                 td.textContent = 'ИТОГО:';
