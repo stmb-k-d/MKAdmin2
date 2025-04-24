@@ -17,6 +17,7 @@ urlpatterns = [
     path('campaigns/', views.campaigns, name='campaigns'),
     path('adsets/', views.adsets, name='adsets'),
     path('ads/', views.ads, name='ads'),
+    path('ad/update_kt_campaign_id/<str:ad_id>/', views.update_kt_campaign_id, name='update_kt_campaign_id'),
     path('ad/<str:ad_id>/', views.ad_detail, name='ad_detail'),
     path('statistic/', views.statistic_view, name='statistic'),
     path('statistic/facebook/', views.facebook_stats_view, name='facebook_stats'),

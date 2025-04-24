@@ -8,6 +8,10 @@ import sys
 from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.contrib import messages
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_menu_items():
     return [
@@ -324,6 +328,67 @@ def ad_detail(request, ad_id):
         'ad': ad,
         'daily_stats': daily_stats
     })
+
+def update_kt_campaign_id(request, ad_id):
+    logger.info(f"Вызов функции update_kt_campaign_id для ad_id={ad_id}, метод: {request.method}")
+    
+    if request.method == 'POST':
+        new_kt_campaign_id = request.POST.get('kt_campaign_id', '')
+        logger.info(f"Получено значение kt_campaign_id: {new_kt_campaign_id}")
+        
+        # Проверяем валидность нового значения
+        if not new_kt_campaign_id.strip():
+            logger.warning(f"Ошибка: kt_campaign_id пустой для ad_id={ad_id}")
+            messages.error(request, 'kt_campaign_id не может быть пустым')
+            return redirect('dashboard:ad_detail', ad_id=ad_id)
+        
+        # Проверяем, что введенное значение является целым числом (тип bigint)
+        try:
+            new_kt_campaign_id = int(new_kt_campaign_id)
+            logger.info(f"Успешно преобразовано в int: {new_kt_campaign_id}")
+            
+            # Выполняем обновление в базе данных
+            try:
+                with connection.cursor() as cursor:
+                    # Начинаем транзакцию
+                    connection.set_autocommit(False)
+                    
+                    # Обновляем kt_campaign_id в основной таблице ad_data
+                    cursor.execute(
+                        'UPDATE ad_data SET kt_campaign_id = %s WHERE ad_id = %s',
+                        [new_kt_campaign_id, ad_id]
+                    )
+                    
+                    # Обновляем kt_campaign_id в таблице ежедневной статистики ad_data_daily
+                    cursor.execute(
+                        'UPDATE ad_data_daily SET kt_campaign_id = %s WHERE ad_id = %s',
+                        [new_kt_campaign_id, ad_id]
+                    )
+                    
+                    # Фиксируем транзакцию
+                    connection.commit()
+                    
+                    # Логируем успешное обновление
+                    logger.info(f"kt_campaign_id для объявления {ad_id} обновлен на {new_kt_campaign_id}")
+                    
+                    # Добавляем сообщение об успешном обновлении
+                    messages.success(request, f'kt_campaign_id успешно обновлен на {new_kt_campaign_id}')
+                    
+                    # Восстанавливаем автокоммит
+                    connection.set_autocommit(True)
+                    
+            except Exception as e:
+                # В случае ошибки откатываем транзакцию и логируем ошибку
+                connection.rollback()
+                connection.set_autocommit(True)
+                
+                logger.error(f"Ошибка при обновлении kt_campaign_id для {ad_id}: {str(e)}")
+                messages.error(request, f'Ошибка при обновлении kt_campaign_id: {str(e)}')
+        except ValueError:
+            messages.error(request, 'kt_campaign_id должен быть целым числом')
+    
+    # Перенаправляем на страницу детального просмотра объявления
+    return redirect('dashboard:ad_detail', ad_id=ad_id)
 
 def working_log(request):
     return render(request, 'dashboard/working_log.html', {
