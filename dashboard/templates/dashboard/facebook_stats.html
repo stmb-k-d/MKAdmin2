@@ -702,13 +702,26 @@ $(document).ready(function() {
                     td.textContent = value !== null ? value : '-';
                 }
                 
-                // Дополнительные стили в зависимости от типа данных
+                // Дополнительные стили в зависимости от типа данных и форматирование
                 if (column === 'date_log') {
                     td.classList.add('date-cell');
                 } else if (column.includes('spend') || column.includes('cpc') || column.includes('cpm')) {
                     td.classList.add('numeric-cell');
                 } else if (column.includes('ctr') || column.includes('cr')) {
                     td.classList.add('percent-cell');
+                }
+                
+                // Ограничение знаков после запятой для cpi и cpr
+                if ((column === 'cpi' || column === 'cpr') && value && value !== '-') {
+                    try {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue)) {
+                            td.textContent = numValue.toFixed(2);
+                        }
+                    } catch (e) {
+                        // В случае ошибки оставляем исходное значение
+                        console.error(`Ошибка форматирования ${column}:`, e);
+                    }
                 }
                 
                 // Добавляем стили для статусов
@@ -782,6 +795,9 @@ $(document).ready(function() {
                 } else if (column.includes('ctr') || column.includes('cr')) {
                     td.textContent = totals[column] ? (totals[column] * 100).toFixed(2) + '%' : '-';
                     td.classList.add('percent-cell');
+                } else if (column === 'cpi' || column === 'cpr') {
+                    td.textContent = totals[column] ? totals[column].toFixed(2) : '-';
+                    td.classList.add('numeric-cell');
                 } else {
                     td.textContent = totals[column] ? Math.round(totals[column]).toString() : '-';
                     td.classList.add('numeric-cell');
