@@ -333,16 +333,15 @@ def update_kt_campaign_id(request, ad_id):
     logger.info(f"Вызов функции update_kt_campaign_id для ad_id={ad_id}, метод: {request.method}")
     
     if request.method == 'POST':
-        new_kt_campaign_id = request.POST.get('kt_campaign_id', '')
-        logger.info(f"Получено значение kt_campaign_id: {new_kt_campaign_id}")
+        new_kt_campaign_id = request.POST.get('kt_campaign_id', '').strip()
+        logger.info(f"Получено новое значение kt_campaign_id: {new_kt_campaign_id}")
         
-        # Проверяем валидность нового значения
-        if not new_kt_campaign_id.strip():
-            logger.warning(f"Ошибка: kt_campaign_id пустой для ad_id={ad_id}")
+        # Проверяем, что введенное значение не пустое
+        if not new_kt_campaign_id:
             messages.error(request, 'kt_campaign_id не может быть пустым')
             return redirect('dashboard:ad_detail', ad_id=ad_id)
         
-        # Проверяем, что введенное значение является целым числом (тип bigint)
+        # Проверяем, что введенное значение - это целое число
         try:
             new_kt_campaign_id = int(new_kt_campaign_id)
             logger.info(f"Успешно преобразовано в int: {new_kt_campaign_id}")
@@ -386,6 +385,78 @@ def update_kt_campaign_id(request, ad_id):
                 messages.error(request, f'Ошибка при обновлении kt_campaign_id: {str(e)}')
         except ValueError:
             messages.error(request, 'kt_campaign_id должен быть целым числом')
+    
+    # Перенаправляем на страницу детального просмотра объявления
+    return redirect('dashboard:ad_detail', ad_id=ad_id)
+
+def update_id_acc_bd(request, ad_id):
+    logger.info(f"Вызов функции update_id_acc_bd для ad_id={ad_id}, метод: {request.method}")
+    
+    if request.method == 'POST':
+        new_id_acc_bd = request.POST.get('id_acc_bd', '').strip()
+        logger.info(f"Получено новое значение id_acc_bd: {new_id_acc_bd}")
+        
+        # Проверяем, что введенное значение не пустое
+        if not new_id_acc_bd:
+            messages.error(request, 'id_acc_bd не может быть пустым')
+            return redirect('dashboard:ad_detail', ad_id=ad_id)
+        
+        # Проверяем, что введенное значение - это целое число
+        try:
+            new_id_acc_bd = int(new_id_acc_bd)
+            logger.info(f"Успешно преобразовано в int: {new_id_acc_bd}")
+            
+            # Выполняем обновление в базе данных
+            try:
+                with connection.cursor() as cursor:
+                    # Начинаем транзакцию
+                    connection.set_autocommit(False)
+                    
+                    # Проверяем существование аккаунта с указанным id_acc_bd
+                    cursor.execute(
+                        'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                        [new_id_acc_bd]
+                    )
+                    account_exists = cursor.fetchone()
+                    
+                    if not account_exists:
+                        connection.set_autocommit(True)
+                        messages.error(request, f'Аккаунт с id_acc_bd={new_id_acc_bd} не существует')
+                        return redirect('dashboard:ad_detail', ad_id=ad_id)
+                    
+                    # Обновляем id_acc_bd в основной таблице ad_data
+                    cursor.execute(
+                        'UPDATE ad_data SET id_acc_bd = %s WHERE ad_id = %s',
+                        [new_id_acc_bd, ad_id]
+                    )
+                    
+                    # Обновляем id_acc_bd в таблице ежедневной статистики ad_data_daily
+                    cursor.execute(
+                        'UPDATE ad_data_daily SET id_acc_bd = %s WHERE ad_id = %s',
+                        [new_id_acc_bd, ad_id]
+                    )
+                    
+                    # Фиксируем транзакцию
+                    connection.commit()
+                    
+                    # Логируем успешное обновление
+                    logger.info(f"id_acc_bd для объявления {ad_id} обновлен на {new_id_acc_bd}")
+                    
+                    # Добавляем сообщение об успешном обновлении
+                    messages.success(request, f'id_acc_bd успешно обновлен на {new_id_acc_bd}')
+                    
+                    # Восстанавливаем автокоммит
+                    connection.set_autocommit(True)
+                    
+            except Exception as e:
+                # В случае ошибки откатываем транзакцию и логируем ошибку
+                connection.rollback()
+                connection.set_autocommit(True)
+                
+                logger.error(f"Ошибка при обновлении id_acc_bd для {ad_id}: {str(e)}")
+                messages.error(request, f'Ошибка при обновлении id_acc_bd: {str(e)}')
+        except ValueError:
+            messages.error(request, 'id_acc_bd должен быть целым числом')
     
     # Перенаправляем на страницу детального просмотра объявления
     return redirect('dashboard:ad_detail', ad_id=ad_id)

@@ -199,6 +199,14 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row">
+        <!-- Кнопка для теста Bootstrap и модальных окон -->
+        <div class="col-12 mb-3">
+            <button id="testBootstrapButton" type="button" class="btn btn-info" onclick="testBootstrap()">
+                Проверить Bootstrap и модальные окна
+            </button>
+            <div id="bootstrapStatus" class="mt-2"></div>
+        </div>
+        
         <!-- Блок для отображения сообщений -->
         {% if messages %}
         <div class="col-12">
@@ -230,7 +238,11 @@
                     <div class="card-body">
                         <div class="detail-row">
                             <div class="detail-label">id_acc_bd</div>
-                            <div class="detail-value">{{ ad.id_acc_bd }}</div>
+                            <div class="detail-value">{{ ad.id_acc_bd }}
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editIdAccBdModal">
+                                    <i class="fas fa-edit"></i> Изменить
+                                </button>
+                            </div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">camp_id</div>
@@ -337,9 +349,9 @@
                             <div class="detail-label">kt_campaign_id</div>
                             <div class="detail-value">
                                 {{ ad.kt_campaign_id }}
-                                <a href="#" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editKtCampaignIdModal">
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editKtCampaignIdModal">
                                     <i class="fas fa-edit"></i> Изменить
-                                </a>
+                                </button>
                             </div>
                         </div>
                         <div class="detail-row">
@@ -709,13 +721,13 @@
                     <h5 class="modal-title" id="editKtCampaignIdModalLabel">Изменить kt_campaign_id</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="ktCampaignIdForm" action="{% url 'dashboard:update_kt_campaign_id' ad.ad_id %}" method="post">
+                <form method="post" action="{% url 'dashboard:update_kt_campaign_id' ad.ad_id %}">
                     {% csrf_token %}
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="kt_campaign_id" class="form-label">Введите новое значение kt_campaign_id</label>
-                            <input type="number" class="form-control" id="kt_campaign_id" name="kt_campaign_id" value="{{ ad.kt_campaign_id }}" required>
-                            <div class="form-text">Введите целое число (тип данных bigint).</div>
+                            <input type="number" class="form-control" id="kt_campaign_id" name="kt_campaign_id" required>
+                            <div class="form-text">Должно быть целое число (тип bigint)</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -723,6 +735,50 @@
                         <button type="submit" class="btn btn-primary">Изменить</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для редактирования id_acc_bd -->
+    <div class="modal fade" id="editIdAccBdModal" tabindex="-1" aria-labelledby="editIdAccBdModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editIdAccBdModalLabel">Изменить id_acc_bd</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'dashboard:update_id_acc_bd' ad.ad_id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="id_acc_bd" class="form-label">Введите новое значение id_acc_bd</label>
+                            <input type="number" class="form-control" id="id_acc_bd" name="id_acc_bd" required>
+                            <div class="form-text">Должно быть целое число (тип bigint)</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Изменить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Тестовое модальное окно -->
+    <div class="modal fade" id="testModal" tabindex="-1" aria-labelledby="testModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testModalLabel">Тестовое модальное окно</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Если вы видите это окно, значит модальные окна работают корректно.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
             </div>
         </div>
     </div>
@@ -739,8 +795,9 @@ $(document).ready(function() {
         $('#kt_campaign_id').focus();
     });
     
-    $('#ktCampaignIdForm').on('submit', function() {
-        console.log("Форма отправляется: kt_campaign_id = " + $('#kt_campaign_id').val());
+    $('#editIdAccBdModal').on('shown.bs.modal', function () {
+        console.log("Модальное окно для id_acc_bd открыто");
+        $('#id_acc_bd').focus();
     });
     
     // Сортировка таблицы
@@ -798,5 +855,32 @@ $(document).ready(function() {
         return $(row).children('td').eq(index).text().trim();
     }
 });
+
+function testBootstrap() {
+    console.log("Тестирование Bootstrap");
+    const status = $('#bootstrapStatus');
+    
+    // Проверяем наличие Bootstrap
+    if (typeof bootstrap !== 'undefined') {
+        status.html('<div class="alert alert-success">Bootstrap загружен корректно.</div>');
+        console.log("Bootstrap доступен:", bootstrap);
+        
+        // Проверяем доступность Modal
+        if (typeof bootstrap.Modal !== 'undefined') {
+            status.append('<div class="alert alert-success">Модальные окна доступны.</div>');
+            console.log("Modal доступен:", bootstrap.Modal);
+            
+            // Открываем тестовое модальное окно
+            const testModal = new bootstrap.Modal(document.getElementById('testModal'));
+            testModal.show();
+        } else {
+            status.append('<div class="alert alert-danger">Модальные окна НЕ доступны!</div>');
+            console.error("Modal не доступен!");
+        }
+    } else {
+        status.html('<div class="alert alert-danger">Bootstrap НЕ загружен!</div>');
+        console.error("Bootstrap не доступен!");
+    }
+}
 </script>
 {% endblock %} 
