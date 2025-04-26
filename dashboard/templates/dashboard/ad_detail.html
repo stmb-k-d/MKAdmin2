@@ -238,7 +238,8 @@
                     <div class="card-body">
                         <div class="detail-row">
                             <div class="detail-label">id_acc_bd</div>
-                            <div class="detail-value">{{ ad.id_acc_bd }}
+                            <div class="detail-value">
+                                {{ ad.id_acc_bd }}
                                 <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editIdAccBdModal">
                                     <i class="fas fa-edit"></i> Изменить
                                 </button>
@@ -790,11 +791,13 @@
 $(document).ready(function() {
     console.log("Инициализация модальных окон и обработчиков");
     
+    // Обработчик открытия модального окна kt_campaign_id
     $('#editKtCampaignIdModal').on('shown.bs.modal', function () {
         console.log("Модальное окно для kt_campaign_id открыто");
         $('#kt_campaign_id').focus();
     });
     
+    // Обработчик открытия модального окна id_acc_bd
     $('#editIdAccBdModal').on('shown.bs.modal', function () {
         console.log("Модальное окно для id_acc_bd открыто");
         $('#id_acc_bd').focus();
@@ -804,22 +807,26 @@ $(document).ready(function() {
     $('.table-daily-stats th').on('click', function() {
         var table = $(this).parents('table').eq(0);
         var rows = table.find('tr:gt(0)').toArray().sort(compareCells($(this).index()));
-        this.asc = !this.asc;
         
-        if (!this.asc) {
+        // Проверяем, есть ли уже класс сортировки на этой колонке
+        if ($(this).hasClass('sorted-asc')) {
+            // Если был по возрастанию, меняем на убывание
+            this.asc = false;
             rows = rows.reverse();
-        }
-        
-        // Удаляем текущую сортировку
-        table.find('th').removeClass('sorted-asc sorted-desc');
-        
-        // Добавляем класс сортировки текущей колонке
-        if (this.asc) {
-            $(this).addClass('sorted-asc');
+            $(this).removeClass('sorted-asc').addClass('sorted-desc');
+        } else if ($(this).hasClass('sorted-desc')) {
+            // Если был по убыванию, меняем на возрастание
+            this.asc = true;
+            $(this).removeClass('sorted-desc').addClass('sorted-asc');
         } else {
-            $(this).addClass('sorted-desc');
+            // Если колонка не была отсортирована, устанавливаем сортировку по возрастанию
+            this.asc = true;
+            // Удаляем классы сортировки со всех колонок
+            table.find('th').removeClass('sorted-asc sorted-desc');
+            $(this).addClass('sorted-asc');
         }
         
+        // Перестраиваем таблицу
         for (var i = 0; i < rows.length; i++) {
             table.append(rows[i]);
         }

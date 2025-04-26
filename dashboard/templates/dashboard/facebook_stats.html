@@ -266,6 +266,17 @@
         text-overflow: clip !important;
         flex-shrink: 0;
     }
+    
+    /* Дополнительные стили для переключателя "Активные" */
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .active-filter-enabled {
+        color: #28a745;
+        font-weight: bold;
+    }
 </style>
 {% endblock %}
 
@@ -293,6 +304,11 @@
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
+                    </div>
+                    <!-- Добавляем переключатель "Активные" -->
+                    <div class="form-check form-switch me-3">
+                        <input class="form-check-input" type="checkbox" id="activeOnlyFilter">
+                        <label class="form-check-label" for="activeOnlyFilter">Активные</label>
                     </div>
                     <div class="column-buttons me-3">
                         <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
@@ -444,6 +460,21 @@ $(document).ready(function() {
     const applyDateFilter = document.getElementById('applyDateFilter');
     const resetDateFilter = document.getElementById('resetDateFilter');
     const refreshTableBtn = document.getElementById('refreshTable');
+    const activeOnlyFilter = document.getElementById('activeOnlyFilter');
+    const searchInput = document.getElementById('searchInput');
+    
+    // Восстанавливаем состояние переключателя "Активные" из localStorage
+    try {
+        const activeOnlyState = localStorage.getItem('fbStatsActiveOnly');
+        if (activeOnlyState === 'true') {
+            activeOnlyFilter.checked = true;
+            // Обновляем только стиль лейбла
+            const label = document.querySelector('label[for="activeOnlyFilter"]');
+            label.classList.add('active-filter-enabled');
+        }
+    } catch (e) {
+        console.error('Ошибка при восстановлении состояния переключателя "Активные":', e);
+    }
     
     // Установка начальных значений дат (последний месяц)
     const today = new Date();
@@ -623,10 +654,13 @@ $(document).ready(function() {
         }
     }
     
-    // Функции для работы с таблицей
-    
+    // Глобальные переменные для хранения текущей сортировки
+    let currentSortColumn = '';
+    let currentSortDirection = '';
+
     // Функция для построения таблицы на основе выбранных колонок
     function buildTable() {
+        console.log("Построение таблицы");
         const tableHeader = document.getElementById('tableHeader');
         const tableBody = document.getElementById('tableBody');
         
@@ -645,6 +679,15 @@ $(document).ready(function() {
                 th.classList.add('column-ad_id');
             } else if (column === 'last_update') {
                 th.classList.add('column-last_update');
+            }
+            
+            // Восстанавливаем классы сортировки, если этот столбец был отсортирован
+            if (column === currentSortColumn) {
+                if (currentSortDirection === 'asc') {
+                    th.classList.add('sorting_asc');
+                } else if (currentSortDirection === 'desc') {
+                    th.classList.add('sorting_desc');
+                }
             }
             
             th.addEventListener('click', () => sortTable(column));
@@ -739,12 +782,17 @@ $(document).ready(function() {
             tableBody.appendChild(tr);
         });
         
-        // Добавляем итоговую строку
-        addTotalRow();
+        console.log("Таблица построена, применяем фильтры");
+        
+        // Применяем текущие фильтры после построения таблицы
+        const searchValue = document.getElementById('searchInput').value;
+        applySearchFilter(searchValue);
     }
     
     // Функция для создания итоговой строки
     function addTotalRow() {
+        console.log("Выполняется addTotalRow()");
+        
         // Суммируемые поля
         const sumFields = [
             'fb_impressions', 'fb_spend', 'fb_link_click', 'fb_video_view', 
@@ -752,22 +800,141 @@ $(document).ready(function() {
             'kt_unic_clicks', 'regs', 'deps', 'income', 'bprofit', 'fb_clicks'
         ];
         
+        // Проверяем, включен ли фильтр "Активные" или поиск
+        const activeOnly = document.getElementById('activeOnlyFilter').checked;
+        console.log("Фильтр 'Активные' включен:", activeOnly);
+        
+        const searchValue = document.getElementById('searchInput').value;
+        console.log("Поисковый запрос:", searchValue);
+        
+        const isFiltered = activeOnly || searchValue.trim() !== '';
+        console.log("Применяется фильтрация:", isFiltered);
+        
         // Вычисляем суммы
         const totals = {};
-        statsData.forEach(item => {
-            sumFields.forEach(field => {
-                if (!totals[field]) totals[field] = 0;
-                // Удаляем символы форматирования и конвертируем в число
-                let value = item[field];
-                if (typeof value === 'string') {
-                    value = value.replace(/[^\d.-]/g, '');
-                }
-                value = parseFloat(value || 0);
-                if (!isNaN(value)) {
-                    totals[field] += value;
-                }
+        
+        // Всегда используем видимые строки для расчета итогов, если есть фильтрация
+        if (isFiltered) {
+            console.log("Используем логику фильтрации для расчета итогов");
+            
+            // Получаем все строки
+            const allRows = document.querySelectorAll('#statsTable tbody tr:not(.total-row)');
+            console.log("Всего строк в таблице (без итоговой):", allRows.length);
+            
+            // Получаем только видимые строки (более надежный селектор)
+            const visibleRows = Array.from(allRows).filter(row => {
+                return window.getComputedStyle(row).display !== 'none';
             });
-        });
+            console.log("Видимых строк после фильтрации:", visibleRows.length);
+            
+            if (visibleRows.length > 0) {
+                console.log("Расчет итогов по видимым строкам");
+                // Считаем итоги по видимым строкам
+                visibleRows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    console.log(`Обрабатываем строку с ${cells.length} ячейками`);
+                    
+                    // Получаем и логируем fb_effective_status для отладки
+                    const statusIndex = selectedColumns.indexOf('fb_effective_status');
+                    if (statusIndex !== -1 && statusIndex < cells.length) {
+                        console.log("Статус строки:", cells[statusIndex].textContent);
+                    }
+                    
+                    sumFields.forEach(field => {
+                        const columnIndex = selectedColumns.indexOf(field);
+                        if (columnIndex !== -1 && columnIndex < cells.length) {
+                            if (!totals[field]) totals[field] = 0;
+                            
+                            // Получаем значение из ячейки
+                            let cell = cells[columnIndex];
+                            let value = cell ? cell.textContent : '0';
+                            
+                            // Удаляем символы форматирования и конвертируем в число
+                            value = value.replace(/[^\d.-]/g, '');
+                            value = parseFloat(value || 0);
+                            
+                            if (!isNaN(value)) {
+                                totals[field] += value;
+                                if (field === 'fb_spend') {
+                                    console.log(`Прибавляем ${value} к итогу по fb_spend, текущая сумма: ${totals[field]}`);
+                                }
+                            }
+                        }
+                    });
+                });
+            } else {
+                console.log("Видимых строк не найдено, используем программную фильтрацию");
+                
+                // Если видимых строк нет, используем программную фильтрацию
+                const filteredData = statsData.filter(item => {
+                    // Проверка фильтра "Активные"
+                    if (activeOnly && (!item.fb_effective_status || item.fb_effective_status.toUpperCase() !== 'ACTIVE')) {
+                        return false;
+                    }
+                    
+                    // Проверка поиска
+                    if (searchValue.trim() !== '') {
+                        let matchesSearch = false;
+                        // Проверяем все выбранные колонки
+                        for (const column of selectedColumns) {
+                            const value = item[column];
+                            if (value && String(value).toLowerCase().includes(searchValue.toLowerCase())) {
+                                matchesSearch = true;
+                                break;
+                            }
+                        }
+                        if (!matchesSearch) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                });
+                
+                console.log("Отфильтровано записей программно:", filteredData.length);
+                console.log("Примеры отфильтрованных данных:", filteredData.slice(0, 3));
+                
+                // Считаем итоги по отфильтрованным данным
+                filteredData.forEach(item => {
+                    sumFields.forEach(field => {
+                        if (!totals[field]) totals[field] = 0;
+                        let value = item[field];
+                        if (typeof value === 'string') {
+                            value = value.replace(/[^\d.-]/g, '');
+                        }
+                        value = parseFloat(value || 0);
+                        if (!isNaN(value)) {
+                            totals[field] += value;
+                            if (field === 'fb_spend') {
+                                console.log(`Прибавляем ${value} к итогу по fb_spend, текущая сумма: ${totals[field]}`);
+                            }
+                        }
+                    });
+                });
+            }
+            
+            console.log("Итоговые значения после фильтрации:", totals);
+        } else {
+            console.log("Фильтрация не применена, считаем по всем данным");
+            
+            // Если фильтры не используются, считаем по всем данным
+            statsData.forEach(item => {
+                sumFields.forEach(field => {
+                    if (!totals[field]) totals[field] = 0;
+                    // Удаляем символы форматирования и конвертируем в число
+                    let value = item[field];
+                    if (typeof value === 'string') {
+                        value = value.replace(/[^\d.-]/g, '');
+                    }
+                    value = parseFloat(value || 0);
+                    if (!isNaN(value)) {
+                        totals[field] += value;
+                    }
+                });
+            });
+            
+            console.log("Итоговые значения без фильтрации:", totals);
+        }
         
         // Создаем итоговую строку
         const tableBody = document.getElementById('tableBody');
@@ -786,7 +953,11 @@ $(document).ready(function() {
             }
             
             if (column === 'date_log' || column === selectedColumns[0]) {
-                td.textContent = 'ИТОГО:';
+                if (isFiltered) {
+                    td.textContent = 'ИТОГО (отфильтровано):';
+                } else {
+                    td.textContent = 'ИТОГО:';
+                }
             } else if (sumFields.includes(column)) {
                 // Форматируем числа в зависимости от типа данных
                 if (column.includes('spend') || column.includes('cpc') || column.includes('cpm')) {
@@ -810,6 +981,8 @@ $(document).ready(function() {
         });
         
         tableBody.appendChild(totalRow);
+        
+        console.log("Строка ИТОГО добавлена в таблицу");
     }
     
     // Функция для построения модального окна выбора колонок
@@ -924,6 +1097,7 @@ $(document).ready(function() {
             headerCell.classList.remove('sorting_asc');
             headerCell.classList.add('sorting_desc');
         } else {
+            sortDirection = 'asc';
             headerCell.classList.remove('sorting_desc');
             headerCell.classList.add('sorting_asc');
         }
@@ -935,15 +1109,23 @@ $(document).ready(function() {
             }
         });
         
+        // Сохраняем информацию о текущей сортировке
+        currentSortColumn = column;
+        currentSortDirection = sortDirection;
+        
         // Сортируем данные
         statsData.sort((a, b) => {
             let valA = a[column] || '';
             let valB = b[column] || '';
             
             // Преобразуем строковые значения в числа если это возможно
-            if (!isNaN(valA) && !isNaN(valB)) {
+            if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
                 valA = parseFloat(valA);
                 valB = parseFloat(valB);
+            } else if (typeof valA === 'string' && typeof valB === 'string') {
+                // Для строковых значений делаем сравнение без учета регистра
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
             }
             
             // Сравниваем значения
@@ -961,31 +1143,118 @@ $(document).ready(function() {
     
     // Функция для применения фильтра поиска
     function applySearchFilter(searchTerm) {
-        const tableRows = document.querySelectorAll('#statsTable tbody tr');
+        console.log("Применяем фильтр, поисковый запрос:", searchTerm);
+        
+        const tableRows = document.querySelectorAll('#statsTable tbody tr:not(.total-row)');
+        console.log("Всего строк для фильтрации:", tableRows.length);
+        
         const searchTermLower = searchTerm.toLowerCase();
+        const activeOnly = document.getElementById('activeOnlyFilter').checked;
+        console.log("Фильтр 'Активные' включен:", activeOnly);
+        
+        let visibleRowCount = 0;
+        
+        // Удаляем существующую итоговую строку, если она есть
+        const existingTotalRow = document.querySelector('#statsTable tbody tr.total-row');
+        if (existingTotalRow) {
+            existingTotalRow.remove();
+            console.log("Удалена существующая итоговая строка");
+        }
         
         tableRows.forEach(row => {
             const cells = row.querySelectorAll('td');
             let rowMatches = false;
+            let isActive = false;
             
-            cells.forEach(cell => {
-                if (cell.textContent.toLowerCase().includes(searchTermLower)) {
-                    rowMatches = true;
+            // Проверяем соответствие поисковому запросу
+            if (searchTerm === '') {
+                rowMatches = true; // Если поисковый запрос пустой, считаем что строка соответствует поиску
+            } else {
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(searchTermLower)) {
+                        rowMatches = true;
+                    }
+                });
+            }
+            
+            // Проверяем, активный ли статус
+            cells.forEach((cell, index) => {
+                const columnName = selectedColumns[index];
+                if (columnName === 'fb_effective_status') {
+                    const status = cell.textContent.trim().toUpperCase();
+                    // Логируем статусы для отладки
+                    console.log("Строка, статус:", status);
+                    if (status === 'ACTIVE') {
+                        isActive = true;
+                    }
                 }
             });
             
-            if (rowMatches) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+            // Применяем фильтры: поиск и активный статус
+            const showRow = rowMatches && (!activeOnly || isActive);
+            console.log(`Строка ${isActive ? 'ACTIVE' : 'не ACTIVE'}, показывать: ${showRow}`);
+            
+            // Устанавливаем видимость строки
+            row.style.display = showRow ? '' : 'none';
+            
+            if (showRow) {
+                visibleRowCount++;
             }
         });
+        
+        console.log("Видимых строк после фильтрации:", visibleRowCount);
+        
+        // Если нет видимых строк, добавляем сообщение
+        const noDataMessage = document.getElementById('noDataMessage');
+        if (visibleRowCount === 0) {
+            if (!noDataMessage) {
+                const tableContainer = document.querySelector('.table-container');
+                const message = document.createElement('div');
+                message.id = 'noDataMessage';
+                message.className = 'alert alert-info mt-3';
+                message.innerHTML = '<i class="fas fa-info-circle"></i> Нет данных для отображения.';
+                
+                if (activeOnly) {
+                    message.innerHTML += ' Попробуйте отключить фильтр "Активные".';
+                }
+                
+                tableContainer.appendChild(message);
+                console.log("Добавлено сообщение об отсутствии данных");
+            }
+        } else if (noDataMessage) {
+            noDataMessage.remove();
+            console.log("Удалено сообщение об отсутствии данных");
+        }
+        
+        // Добавляем новую итоговую строку после фильтрации
+        addTotalRow();
     }
     
     // Обработчик для поиска
-    const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('input', function() {
         applySearchFilter(this.value);
+    });
+    
+    // Обработчик для переключателя "Активные"
+    activeOnlyFilter.addEventListener('change', function() {
+        // Сохраняем состояние переключателя в localStorage
+        try {
+            localStorage.setItem('fbStatsActiveOnly', this.checked);
+        } catch (e) {
+            console.error('Ошибка при сохранении состояния переключателя "Активные":', e);
+        }
+        
+        // Изменяем стиль лейбла
+        const label = document.querySelector('label[for="activeOnlyFilter"]');
+        if (this.checked) {
+            label.classList.add('active-filter-enabled');
+        } else {
+            label.classList.remove('active-filter-enabled');
+        }
+        
+        // Применяем фильтр заново
+        console.log("Изменено состояние фильтра 'Активные', применяем фильтр");
+        applySearchFilter(searchInput.value);
     });
     
     // Обработчик для чекбокса "Выбрать все"
@@ -1077,6 +1346,9 @@ $(document).ready(function() {
     // Инициализация
     buildTable();
     buildColumnSelectionModal();
+    
+    // Применяем фильтр сразу при загрузке страницы
+    applySearchFilter(searchInput.value);
 });
 </script>
 {% endblock %} 

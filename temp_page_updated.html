@@ -1,0 +1,2473 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Detail: 120223001269800348</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+<style>
+    .detail-card {
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+    
+    .detail-card .card-header {
+        background: #f8f9fa;
+        font-weight: 600;
+        padding: 15px;
+    }
+    
+    .detail-card .card-body {
+        padding: 20px;
+    }
+    
+    .detail-card h5 {
+        margin-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        color: #343a40;
+    }
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #f3f3f3;
+        padding-bottom: 10px;
+    }
+    
+    .detail-row:last-child {
+        margin-bottom: 0;
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        width: 200px;
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .detail-value {
+        flex: 1;
+        color: #212529;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: 500;
+        margin-top: -3px;
+    }
+    
+    .status-active {
+        background: #28a745;
+        color: white;
+    }
+    
+    .status-paused {
+        background: #ffc107;
+        color: black;
+    }
+    
+    .status-disabled {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .collapse-toggle {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .collapse-toggle i {
+        transition: transform 0.3s ease;
+    }
+    
+    .collapse-toggle.collapsed i {
+        transform: rotate(-90deg);
+    }
+    
+    .statistic-card {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .statistic-item {
+        flex: 1;
+        min-width: 120px;
+        padding: 15px;
+        text-align: center;
+        border-right: 1px solid #f3f3f3;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .statistic-item:last-child {
+        border-right: none;
+    }
+    
+    .statistic-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+    
+    .statistic-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    /* Стили для таблицы статистики по дням */
+    .table-daily-stats {
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .table-daily-stats-container {
+        overflow-x: auto;
+        max-width: 100%;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .table-daily-stats th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        vertical-align: middle;
+        text-align: center;
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table-daily-stats th:hover {
+        background-color: #e9ecef;
+    }
+    
+    .table-daily-stats th.sorted-asc:after {
+        content: '↑';
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #28a745;
+    }
+    
+    .table-daily-stats th.sorted-desc:after {
+        content: '↓';
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #28a745;
+    }
+    
+    .table-daily-stats td {
+        vertical-align: middle;
+        text-align: center;
+    }
+    
+    /* Подсветка строк при наведении */
+    .table-daily-stats tbody tr:hover {
+        background-color: rgba(40, 167, 69, 0.05);
+    }
+    
+    @media (max-width: 768px) {
+        .statistic-item {
+            min-width: 50%;
+            border-right: none;
+            border-bottom: 1px solid #f3f3f3;
+        }
+        
+        .table-daily-stats {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --bg-color: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-light: #dee2e6;
+            --hover-bg: #f8f9fa;
+            --active-bg: #e9ecef;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .main-content {
+            background: var(--bg-color);
+            border-radius: 8px;
+            margin: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar {
+            background: var(--bg-color) !important;
+            border-bottom: 1px solid var(--border-light);
+            padding: 0.75rem 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-brand {
+            color: var(--text-primary) !important;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            color: var(--text-secondary) !important;
+            padding: 0.5rem 1rem;
+            margin: 0 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+            background-color: var(--hover-bg);
+        }
+
+        .nav-link.active {
+            color: var(--primary-color) !important;
+            background-color: var(--active-bg);
+            font-weight: 500;
+        }
+
+        .card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-light);
+            padding: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table {
+            margin-bottom: 0;
+            color: var(--text-primary);
+        }
+
+        .table thead th {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-light);
+            font-weight: 600;
+            padding: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            background: transparent;
+            font-weight: 500;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: #ffffff;
+        }
+
+        .badge {
+            padding: 0.5em 0.75em;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.85em;
+        }
+
+        .badge.bg-success {
+            background-color: var(--success-color) !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-warning {
+            background-color: var(--warning-color) !important;
+            color: #000000 !important;
+        }
+
+        .badge.bg-danger {
+            background-color: var(--danger-color) !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-secondary {
+            background-color: var(--secondary-color) !important;
+            color: #ffffff !important;
+        }
+
+        .matrix-icon {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: var(--bg-color) !important;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+        }
+
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: var(--text-secondary) !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            color: #ffffff !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: var(--hover-bg) !important;
+            border-color: var(--border-light) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .form-control {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .modal-content {
+            background-color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-light);
+            padding: 1rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-light);
+            padding: 1rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                background: var(--bg-color);
+                border: 1px solid var(--border-light);
+                border-radius: 8px;
+                margin-top: 0.5rem;
+                padding: 0.5rem;
+            }
+            
+            .nav-link {
+                padding: 0.5rem 1rem;
+                margin: 0.25rem 0;
+            }
+        }
+
+        /* Стили для выпадающего меню */
+        .dropdown-menu {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            color: var(--primary-color);
+            background-color: var(--hover-bg);
+        }
+
+        .dropdown-item.active {
+            color: var(--primary-color);
+            background-color: var(--active-bg);
+            font-weight: 500;
+        }
+
+        .nav-item.dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-toggle::after {
+            margin-left: 0.5em;
+        }
+    </style>
+    
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard/">
+                <i class="fas fa-robot matrix-icon"></i>MKAdmin
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/dashboard/">
+                                    <i class="fas fa-tachometer-alt matrix-icon"></i>Дашборд
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/proxy/">
+                                    <i class="fas fa-server matrix-icon"></i>Прокси
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownfacebook" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fab fa-facebook matrix-icon"></i>Facebook
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarDropdownfacebook">
+                                    
+                                        <li>
+                                            <a class="dropdown-item " 
+                                               href="/accs/">
+                                                <i class="fas fa-users matrix-icon"></i>Accounts
+                                            </a>
+                                        </li>
+                                    
+                                        <li>
+                                            <a class="dropdown-item " 
+                                               href="/rk/">
+                                                <i class="fas fa-chart-line matrix-icon"></i>Ads Cabinets
+                                            </a>
+                                        </li>
+                                    
+                                        <li>
+                                            <a class="dropdown-item " 
+                                               href="/campaigns/">
+                                                <i class="fas fa-bullhorn matrix-icon"></i>Campaigns
+                                            </a>
+                                        </li>
+                                    
+                                        <li>
+                                            <a class="dropdown-item " 
+                                               href="/adsets/">
+                                                <i class="fas fa-layer-group matrix-icon"></i>Adsets
+                                            </a>
+                                        </li>
+                                    
+                                        <li>
+                                            <a class="dropdown-item " 
+                                               href="/ads/">
+                                                <i class="fas fa-ad matrix-icon"></i>Ads
+                                            </a>
+                                        </li>
+                                    
+                                </ul>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/statistic/">
+                                    <i class="fas fa-chart-bar matrix-icon"></i>Статистика
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/analytics/">
+                                    <i class="fas fa-chart-pie matrix-icon"></i>Аналитика
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/tasks/">
+                                    <i class="fas fa-tasks matrix-icon"></i>Задачи
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/finance/">
+                                    <i class="fas fa-money-bill-wave matrix-icon"></i>Финансы
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/services/">
+                                    <i class="fas fa-cogs matrix-icon"></i>Сервисы
+                                </a>
+                            </li>
+                        
+                    
+                        
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/working_log/">
+                                    <i class="fas fa-clipboard-list matrix-icon"></i>Working Log
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="main-content">
+            <div class="container-fluid">
+                <h2 class="mb-4">Детали объявления: 120223001269800348</h2>
+                
+<div class="container-fluid">
+    <div class="row">
+        <!-- Кнопка для теста Bootstrap и модальных окон -->
+        <div class="col-12 mb-3">
+            <button id="testBootstrapButton" type="button" class="btn btn-info" onclick="testBootstrap()">
+                Проверить Bootstrap и модальные окна
+            </button>
+            <div id="bootstrapStatus" class="mt-2"></div>
+        </div>
+        
+        <!-- Блок для отображения сообщений -->
+        
+        
+        <div class="row mb-3">
+            <div class="col-12">
+                <a href="/ads/" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Назад к списку объявлений
+                </a>
+            </div>
+        </div>
+        
+        <!-- Верхняя секция: Инфо слева, Расширенная статистика справа -->
+        <div class="row">
+            <!-- Информационный блок слева -->
+            <div class="col-md-6">
+                <div class="card detail-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Информация об объявлении</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="detail-row">
+                            <div class="detail-label">id_acc_bd</div>
+                            <div class="detail-value">8
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editIdAccBdModal">
+                                    <i class="fas fa-edit"></i> Изменить
+                                </button>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_id</div>
+                            <div class="detail-value">120222808914260348</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_id</div>
+                            <div class="detail-value">120222808914370348</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">ad_id</div>
+                            <div class="detail-value">120223001269800348</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">creative_thumbnail_url</div>
+                            <div class="detail-value">
+                                
+                                    <a href="https://scontent.fabe1-1.fna.fbcdn.net/v/t15.5256-10/484568901_2958884690955422_6246253005421094409_n.jpg?_nc_cat=108&amp;ccb=1-7&amp;_nc_ohc=d5A5GwmH2D8Q7kNvwHqoeXx&amp;_nc_oc=Adljn9Rn0yXT706Nst2RszIxOp1tYeFnjRt2_P9tCj-qHeT9CQ7Yd_KcdR-t_-s7ydI&amp;_nc_zt=23&amp;_nc_ht=scontent.fabe1-1.fna&amp;_nc_gid=v4SKLeXFvYQ5uX76lTdqfQ&amp;stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&amp;ur=7965db&amp;_nc_sid=58080a&amp;oh=00_AfGffwp7mawMAlsMBOk4KAFsvegh6YuEszSvjt0Q72lv1g&amp;oe=6812D6F9" target="_blank">Просмотр</a>
+                                
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">ad_name</div>
+                            <div class="detail-value">New Leads Ad</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_name</div>
+                            <div class="detail-value">New Leads Ad Set</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_name</div>
+                            <div class="detail-value">New Leads Campaign</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">rk_name</div>
+                            <div class="detail-value">3</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_objective</div>
+                            <div class="detail-value">OUTCOME_LEADS</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge 
+                                    status-paused
+                                    ">
+                                    PAUSED
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-paused">
+                                    PAUSED
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">ad_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-paused">
+                                    PAUSED
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">kt_campaign_id</div>
+                            <div class="detail-value">
+                                None
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editKtCampaignIdModal">
+                                    <i class="fas fa-edit"></i> Изменить
+                                </button>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">kt_campaign_name</div>
+                            <div class="detail-value">None</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">creo_id</div>
+                            <div class="detail-value">None</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">type_optimization</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">install_or_dep</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">comment</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">live_status</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">ad_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-paused">
+                                    PAUSED
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_effective_status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-active">
+                                    ACTIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">thumbnail_url</div>
+                            <div class="detail-value">
+                                
+                                    -
+                                
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">rk_cur</div>
+                            <div class="detail-value">USD</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">geo_buying</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">app_id</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">last_update_fbt</div>
+                            <div class="detail-value">April 26, 2025, 11:07 p.m.</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">last_update_kt</div>
+                            <div class="detail-value">April 26, 2025, 11:08 p.m.</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">campaign_id</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">kt_ad_id</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Расширенная статистика справа -->
+            <div class="col-md-6">
+                <div class="card detail-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Расширенная статистика</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="detail-row">
+                            <div class="detail-label">fb_quality_score_organic</div>
+                            <div class="detail-value">0</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_quality_score_ectr</div>
+                            <div class="detail-value">0</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_quality_score_ecvr</div>
+                            <div class="detail-value">0</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_video_view</div>
+                            <div class="detail-value">680</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_page_engagement</div>
+                            <div class="detail-value">752</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_post_engagement</div>
+                            <div class="detail-value">752</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">fb_post_reaction</div>
+                            <div class="detail-value">4</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">name</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">type</div>
+                            <div class="detail-value">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Блок статистики -->
+        <div class="card detail-card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="statistic-card">
+                    <!-- Первый ряд статистики -->
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_spend</div>
+                        <div class="statistic-value">194.58</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_cpm</div>
+                        <div class="statistic-value">37.18</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_impressions</div>
+                        <div class="statistic-value">5233</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_clicks</div>
+                        <div class="statistic-value">82</div>
+                    </div>
+                </div>
+
+                <div class="statistic-card">
+                    <!-- Второй ряд статистики -->
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_ctr</div>
+                        <div class="statistic-value">1.00%</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_cpc</div>
+                        <div class="statistic-value">2.37</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_link_click</div>
+                        <div class="statistic-value">68</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">fb_cost_per_unique_click</div>
+                        <div class="statistic-value">2.86</div>
+                    </div>
+                </div>
+
+                <div class="statistic-card">
+                    <!-- Третий ряд статистики -->
+                    <div class="statistic-item">
+                        <div class="statistic-label">kt_unic_clicks</div>
+                        <div class="statistic-value">0</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">c2i</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">cr2i</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">cpi</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                </div>
+
+                <div class="statistic-card">
+                    <!-- Четвертый ряд статистики -->
+                    <div class="statistic-item">
+                        <div class="statistic-label">regs</div>
+                        <div class="statistic-value">0</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">cr2r</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">i2r</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">cpr</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                </div>
+
+                <div class="statistic-card">
+                    <!-- Пятый ряд статистики -->
+                    <div class="statistic-item">
+                        <div class="statistic-label">cr2d</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">r2s</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">cps</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">deps</div>
+                        <div class="statistic-value">0</div>
+                    </div>
+                </div>
+
+                <div class="statistic-card">
+                    <!-- Шестой ряд статистики -->
+                    <div class="statistic-item">
+                        <div class="statistic-label">income</div>
+                        <div class="statistic-value">0.00</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">bprofit</div>
+                        <div class="statistic-value">-194.58</div>
+                    </div>
+                    <div class="statistic-item">
+                        <div class="statistic-label">broi</div>
+                        <div class="statistic-value">0.00%</div>
+                    </div>
+                    <div class="statistic-item">
+                        <!-- Пустой элемент для выравнивания -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Блок статистики по дням -->
+        <div class="card detail-card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Статистика по дням</h5>
+            </div>
+            <div class="card-body">
+                
+                    <div class="table-daily-stats-container">
+                        <table class="table table-sm table-striped table-hover table-daily-stats">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Spend</th>
+                                    <th>CPM</th>
+                                    <th>Impressions</th>
+                                    <th>Clicks</th>
+                                    <th>CTR</th>
+                                    <th>CPC</th>
+                                    <th>Link Click</th>
+                                    <th>Cost per Unique Click</th>
+                                    <th>KT Unic Clicks</th>
+                                    <th>C2I</th>
+                                    <th>CR2I</th>
+                                    <th>CPI</th>
+                                    <th>Regs</th>
+                                    <th>CR2R</th>
+                                    <th>I2R</th>
+                                    <th>CPR</th>
+                                    <th>CR2D</th>
+                                    <th>R2S</th>
+                                    <th>CPS</th>
+                                    <th>Deps</th>
+                                    <th>Income</th>
+                                    <th>BProfit</th>
+                                    <th>BROI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                
+                                    <tr>
+                                        <td>25.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>24.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>23.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>22.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0</td>
+                                        <td>0.00</td>
+                                        <td>0.00</td>
+                                        <td>0.00%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>21.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>20.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>19.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>18.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>14.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>13.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>12.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>11.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>10.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>09.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>08.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>07.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>06.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>05.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>04.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>03.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>02.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>01.04.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>31.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>30.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>29.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>25.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>24.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>23.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>22.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>21.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>20.03.2025</td>
+                                        <td>4.33</td>
+                                        <td>33.57</td>
+                                        <td>129</td>
+                                        <td>1</td>
+                                        <td>0.78%</td>
+                                        <td>4.33</td>
+                                        <td>1</td>
+                                        <td>4.33</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>19.03.2025</td>
+                                        <td>51.90</td>
+                                        <td>38.13</td>
+                                        <td>1361</td>
+                                        <td>22</td>
+                                        <td>1.62%</td>
+                                        <td>2.36</td>
+                                        <td>17</td>
+                                        <td>2.60</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>18.03.2025</td>
+                                        <td>43.79</td>
+                                        <td>46.44</td>
+                                        <td>943</td>
+                                        <td>19</td>
+                                        <td>2.01%</td>
+                                        <td>2.30</td>
+                                        <td>16</td>
+                                        <td>2.58</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>17.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>16.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>15.03.2025</td>
+                                        <td>42.07</td>
+                                        <td>33.87</td>
+                                        <td>1242</td>
+                                        <td>21</td>
+                                        <td>1.69%</td>
+                                        <td>2.00</td>
+                                        <td>18</td>
+                                        <td>2.47</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>14.03.2025</td>
+                                        <td>52.49</td>
+                                        <td>33.69</td>
+                                        <td>1558</td>
+                                        <td>19</td>
+                                        <td>1.22%</td>
+                                        <td>2.76</td>
+                                        <td>16</td>
+                                        <td>3.28</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>13.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>12.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>11.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>10.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                                    <tr>
+                                        <td>09.03.2025</td>
+                                        <td>0.00</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td>0.00%</td>
+                                        <td></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>%</td>
+                                    </tr>
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для редактирования kt_campaign_id -->
+    <div class="modal fade" id="editKtCampaignIdModal" tabindex="-1" aria-labelledby="editKtCampaignIdModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editKtCampaignIdModalLabel">Изменить kt_campaign_id</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="/ad/update_kt_campaign_id/120223001269800348/" id="kt_campaign_id_form">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="sTkkN8QF1CVVGKDKRRKGKXP2eAohH5oShhjZGxctOsY9fLYXyiFB05OnJu1UVbQe">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="kt_campaign_id" class="form-label">Введите новое значение kt_campaign_id</label>
+                            <input type="number" class="form-control" id="kt_campaign_id" name="kt_campaign_id" required>
+                            <div class="form-text">Должно быть целое число (тип bigint)</div>
+                        </div>
+                        <div class="alert alert-info" id="kt_campaign_form_status" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Изменить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для редактирования id_acc_bd -->
+    <div class="modal fade" id="editIdAccBdModal" tabindex="-1" aria-labelledby="editIdAccBdModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editIdAccBdModalLabel">Изменить id_acc_bd</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="/ad/update_id_acc_bd/120223001269800348/" id="id_acc_bd_form">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="sTkkN8QF1CVVGKDKRRKGKXP2eAohH5oShhjZGxctOsY9fLYXyiFB05OnJu1UVbQe">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="id_acc_bd" class="form-label">Введите новое значение id_acc_bd</label>
+                            <input type="number" class="form-control" id="id_acc_bd" name="id_acc_bd" required>
+                            <div class="form-text">Должно быть целое число (тип bigint)</div>
+                        </div>
+                        <div class="alert alert-info" id="id_acc_bd_form_status" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Изменить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Тестовое модальное окно -->
+    <div class="modal fade" id="testModal" tabindex="-1" aria-labelledby="testModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testModalLabel">Тестовое модальное окно</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Если вы видите это окно, значит модальные окна работают корректно.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="/static/dashboard/js/sounds.js"></script>
+    
+<script>
+$(document).ready(function() {
+    console.log("Инициализация модальных окон и обработчиков");
+    
+    // Проверяем доступность Bootstrap
+    if (typeof bootstrap === 'undefined') {
+        console.error("Bootstrap не загружен!");
+    } else {
+        console.log("Bootstrap доступен:", bootstrap);
+    }
+    
+    // Проверяем доступность Modal
+    if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal === 'undefined') {
+        console.error("Modal компонент не доступен!");
+    } else if (typeof bootstrap !== 'undefined') {
+        console.log("Modal компонент доступен");
+    }
+    
+    // Обработчик открытия модального окна kt_campaign_id
+    $('#editKtCampaignIdModal').on('shown.bs.modal', function () {
+        console.log("Модальное окно для kt_campaign_id открыто");
+        $('#kt_campaign_id').focus();
+    });
+    
+    // Обработчик открытия модального окна id_acc_bd
+    $('#editIdAccBdModal').on('shown.bs.modal', function () {
+        console.log("Модальное окно для id_acc_bd открыто");
+        $('#id_acc_bd').focus();
+    });
+    
+    // Обработчик отправки формы kt_campaign_id
+    $('#kt_campaign_id_form').on('submit', function(e) {
+        console.log("Форма kt_campaign_id отправляется");
+        console.log("URL:", $(this).attr('action'));
+        console.log("Метод:", $(this).attr('method'));
+        console.log("Значение kt_campaign_id:", $('#kt_campaign_id').val());
+    });
+    
+    // Обработчик отправки формы id_acc_bd
+    $('#id_acc_bd_form').on('submit', function(e) {
+        console.log("Форма id_acc_bd отправляется");
+        console.log("URL:", $(this).attr('action'));
+        console.log("Метод:", $(this).attr('method'));
+        console.log("Значение id_acc_bd:", $('#id_acc_bd').val());
+    });
+    
+    // Обработчик для кнопки, открывающей модальное окно kt_campaign_id
+    $('button[data-bs-target="#editKtCampaignIdModal"]').on('click', function() {
+        console.log("Кнопка открытия модального окна kt_campaign_id нажата");
+    });
+    
+    // Обработчик для кнопки, открывающей модальное окно id_acc_bd
+    $('button[data-bs-target="#editIdAccBdModal"]').on('click', function() {
+        console.log("Кнопка открытия модального окна id_acc_bd нажата");
+    });
+    
+    // Сортировка таблицы
+    $('.table-daily-stats th').on('click', function() {
+        var table = $(this).parents('table').eq(0);
+        var rows = table.find('tr:gt(0)').toArray().sort(compareCells($(this).index()));
+        
+        // Проверяем, есть ли уже класс сортировки на этой колонке
+        if ($(this).hasClass('sorted-asc')) {
+            // Если был по возрастанию, меняем на убывание
+            this.asc = false;
+            rows = rows.reverse();
+            $(this).removeClass('sorted-asc').addClass('sorted-desc');
+        } else if ($(this).hasClass('sorted-desc')) {
+            // Если был по убыванию, меняем на возрастание
+            this.asc = true;
+            $(this).removeClass('sorted-desc').addClass('sorted-asc');
+        } else {
+            // Если колонка не была отсортирована, устанавливаем сортировку по возрастанию
+            this.asc = true;
+            // Удаляем классы сортировки со всех колонок
+            table.find('th').removeClass('sorted-asc sorted-desc');
+            $(this).addClass('sorted-asc');
+        }
+        
+        // Перестраиваем таблицу
+        for (var i = 0; i < rows.length; i++) {
+            table.append(rows[i]);
+        }
+    });
+    
+    function compareCells(index) {
+        return function(a, b) {
+            var valA = getCellValue(a, index);
+            var valB = getCellValue(b, index);
+            
+            // Проверка, является ли значение числом
+            if (!isNaN(valA) && !isNaN(valB)) {
+                return valA - valB;
+            }
+            
+            // Для дат в формате DD.MM.YYYY
+            if (valA.match(/\d{2}\.\d{2}\.\d{4}/) && valB.match(/\d{2}\.\d{2}\.\d{4}/)) {
+                var dateA = valA.split('.');
+                var dateB = valB.split('.');
+                
+                // Преобразуем в формат YYYY-MM-DD для сравнения
+                var dateStringA = dateA[2] + '-' + dateA[1] + '-' + dateA[0];
+                var dateStringB = dateB[2] + '-' + dateB[1] + '-' + dateB[0];
+                
+                return new Date(dateStringA) - new Date(dateStringB);
+            }
+            
+            return valA.localeCompare(valB);
+        };
+    }
+    
+    function getCellValue(row, index) {
+        return $(row).children('td').eq(index).text().trim();
+    }
+});
+
+function testBootstrap() {
+    console.log("Тестирование Bootstrap");
+    const status = $('#bootstrapStatus');
+    
+    // Проверяем наличие jQuery
+    if (typeof $ === 'undefined') {
+        status.html('<div class="alert alert-danger">jQuery не загружен!</div>');
+        console.error("jQuery не доступен!");
+        return;
+    } else {
+        status.html('<div class="alert alert-success">jQuery загружен корректно.</div>');
+        console.log("jQuery доступен:", $);
+    }
+    
+    // Проверяем наличие Bootstrap
+    if (typeof bootstrap === 'undefined') {
+        status.append('<div class="alert alert-danger">Bootstrap НЕ загружен!</div>');
+        console.error("Bootstrap не доступен!");
+        return;
+    } else {
+        status.append('<div class="alert alert-success">Bootstrap загружен корректно.</div>');
+        console.log("Bootstrap доступен:", bootstrap);
+    }
+    
+    // Проверяем доступность Modal
+    if (typeof bootstrap.Modal === 'undefined') {
+        status.append('<div class="alert alert-danger">Модальные окна НЕ доступны!</div>');
+        console.error("Modal не доступен!");
+        return;
+    } else {
+        status.append('<div class="alert alert-success">Модальные окна доступны.</div>');
+        console.log("Modal доступен:", bootstrap.Modal);
+    }
+    
+    // Пытаемся открыть тестовое модальное окно
+    try {
+        const testModalEl = document.getElementById('testModal');
+        if (!testModalEl) {
+            status.append('<div class="alert alert-danger">Элемент testModal не найден!</div>');
+            console.error("Элемент testModal не найден!");
+            return;
+        }
+        
+        const testModal = new bootstrap.Modal(testModalEl);
+        testModal.show();
+        status.append('<div class="alert alert-success">Тестовое модальное окно открыто успешно.</div>');
+        console.log("Тестовое модальное окно открыто успешно");
+    } catch (e) {
+        status.append('<div class="alert alert-danger">Ошибка при открытии модального окна: ' + e.message + '</div>');
+        console.error("Ошибка при открытии модального окна:", e);
+    }
+}
+</script>
+
+</body>
+</html> 
