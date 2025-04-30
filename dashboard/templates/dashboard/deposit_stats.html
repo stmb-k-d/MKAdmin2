@@ -193,7 +193,7 @@
                     </div>
                     
                     <!-- Таблица статистики по дням -->
-                    <h6 class="mb-3">Статистика по дням</h6>
+                    <h6 class="mb-3">Статистика Corefy по дням</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped table-bordered stats-table">
                             <thead>
@@ -222,15 +222,15 @@
                             <thead>
                                 <tr>
                                     <th>PSP</th>
-                                    <th>Сorefy Попытки Всего</th>
-                                    <th>Сorefy Попытки От Уников</th>
-                                    <th>Corefy Ввели карту всего</th>
+                                    <th>Попытки Всего</th>
+                                    <th>Попытки От Уников</th>
+                                    <th>Ввели карту всего</th>
                                     <th>CR введения карты от всего попыток</th>
-                                    <th>Corefy Ввели карту уники</th>
+                                    <th>Ввели карту уники</th>
                                     <th>CR введения карты от Уников</th>
-                                    <th>Corefy Ввели удачная попытка всего</th>
+                                    <th>Ввели удачная попытка всего</th>
                                     <th>CR Удачных попыток от всего попыток</th>
-                                    <th>Corefy Ввели удачная попытка уники</th>
+                                    <th>удачных попыток уники</th>
                                     <th>CR Удачных попыток от уников</th>
                                 </tr>
                             </thead>
@@ -549,53 +549,53 @@ $(document).ready(function() {
         Object.keys(groupedByPSP).sort().forEach(pspName => {
             const pspData = groupedByPSP[pspName];
             
-            // Основные metrics для Corefy
-            const corefyAttempts = pspData.filter(item => item.initiatedPsp === 'Corefy');
-            const corefyUnique = [...new Set(corefyAttempts.map(item => item.user_id))].length;
+            // Все попытки для данного PSP
+            const allAttempts = pspData;
+            const uniqueUsers = [...new Set(allAttempts.map(item => item.user_id))].length;
             
-            const corefyWithCard = pspData.filter(item => 
-                item.initiatedPsp === 'Corefy' && 
+            // Все попытки с введенной картой
+            const attemptWithCard = pspData.filter(item => 
                 item.numberCard && 
                 item.numberCard.toString().length > 0
             );
-            const corefyUniqueWithCard = [...new Set(corefyWithCard.map(item => item.user_id))].length;
+            const uniqueUsersWithCard = [...new Set(attemptWithCard.map(item => item.user_id))].length;
             
-            const corefySuccessful = pspData.filter(item => 
-                item.initiatedPsp === 'Corefy' && 
+            // Успешные попытки
+            const successfulAttempts = pspData.filter(item => 
                 (item.status === 'SUCCESSFUL' || item.status === 'STD')
             );
-            const corefyUniqueSuccessful = [...new Set(corefySuccessful.map(item => item.user_id))].length;
+            const uniqueUsersSuccessful = [...new Set(successfulAttempts.map(item => item.user_id))].length;
             
             // CR (Conversion Rate) calculations
-            const crCardFromTotal = corefyAttempts.length > 0 
-                ? (corefyWithCard.length / corefyAttempts.length * 100).toFixed(2) 
+            const crCardFromTotal = allAttempts.length > 0 
+                ? (attemptWithCard.length / allAttempts.length * 100).toFixed(2) 
                 : 0;
                 
-            const crCardFromUnique = corefyUnique > 0 
-                ? (corefyUniqueWithCard / corefyUnique * 100).toFixed(2) 
+            const crCardFromUnique = uniqueUsers > 0 
+                ? (uniqueUsersWithCard / uniqueUsers * 100).toFixed(2) 
                 : 0;
                 
-            const crSuccessFromTotal = corefyAttempts.length > 0 
-                ? (corefySuccessful.length / corefyAttempts.length * 100).toFixed(2) 
+            const crSuccessFromTotal = allAttempts.length > 0 
+                ? (successfulAttempts.length / allAttempts.length * 100).toFixed(2) 
                 : 0;
                 
-            const crSuccessFromUnique = corefyUnique > 0 
-                ? (corefyUniqueSuccessful / corefyUnique * 100).toFixed(2) 
+            const crSuccessFromUnique = uniqueUsers > 0 
+                ? (uniqueUsersSuccessful / uniqueUsers * 100).toFixed(2) 
                 : 0;
             
             // Добавляем строку в таблицу статистики по PSP
             $('#pspStatsTableBody').append(`
                 <tr>
                     <td>${pspName}</td>
-                    <td>${corefyAttempts.length}</td>
-                    <td>${corefyUnique}</td>
-                    <td>${corefyWithCard.length}</td>
+                    <td>${allAttempts.length}</td>
+                    <td>${uniqueUsers}</td>
+                    <td>${attemptWithCard.length}</td>
                     <td>${crCardFromTotal}%</td>
-                    <td>${corefyUniqueWithCard}</td>
+                    <td>${uniqueUsersWithCard}</td>
                     <td>${crCardFromUnique}%</td>
-                    <td>${corefySuccessful.length}</td>
+                    <td>${successfulAttempts.length}</td>
                     <td>${crSuccessFromTotal}%</td>
-                    <td>${corefyUniqueSuccessful}</td>
+                    <td>${uniqueUsersSuccessful}</td>
                     <td>${crSuccessFromUnique}%</td>
                 </tr>
             `);
