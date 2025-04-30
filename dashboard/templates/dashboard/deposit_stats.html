@@ -1,0 +1,27 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Статистика по попыткам депозитов{% endblock %}
+
+{% block page_title %}Статистика по попыткам депозитов{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Статистика по попыткам депозитов</h5>
+                    <div>
+                        <a href="{% url 'dashboard:lp' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Назад к LP
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-center">Страница будет разработана позже</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

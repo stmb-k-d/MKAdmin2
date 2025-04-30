@@ -476,6 +476,20 @@ def extra_view(request):
         'page_title': 'Экстра'
     })
 
+def lp_view(request):
+    return render(request, 'dashboard/lp.html', {
+        'menu_items': get_menu_items(),
+        'title': 'LP',
+        'page_title': 'LP'
+    })
+
+def deposit_stats_view(request):
+    return render(request, 'dashboard/deposit_stats.html', {
+        'menu_items': get_menu_items(),
+        'title': 'Статистика по попыткам депозитов',
+        'page_title': 'Статистика по попыткам депозитов'
+    })
+
 def facebook_stats_view(request):
     """
     Отображает данные статистики Facebook из таблицы ad_data_daily
