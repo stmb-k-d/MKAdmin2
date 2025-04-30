@@ -186,12 +186,70 @@
                             <h6 class="mb-0">Сводная статистика</h6>
                         </div>
                         <div class="card-body">
-                            <div class="row" id="totalStats">
-                                <!-- Сюда будет добавлена общая статистика через JS -->
+                            <div class="row">
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div class="card h-100 border-primary">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title text-primary">Попытки Всего</h6>
+                                            <p class="card-text mb-1">Всего: <strong id="totalAttempts">0</strong></p>
+                                            <p class="card-text mb-0">Уникальных: <strong id="totalUniqueUsers">0</strong></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div class="card h-100 border-info">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title text-info">Ввели карту</h6>
+                                            <p class="card-text mb-1">Всего: <strong id="totalWithCard">0</strong> (<span id="totalCrCardFromTotal">0</span>%)</p>
+                                            <p class="card-text mb-0">Уникальных: <strong id="totalUniqueWithCard">0</strong> (<span id="totalCrCardFromUnique">0</span>%)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div class="card h-100 border-success">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title text-success">Успешные попытки</h6>
+                                            <p class="card-text mb-1">Всего: <strong id="totalSuccessful">0</strong> (<span id="totalCrSuccessFromTotal">0</span>%)</p>
+                                            <p class="card-text mb-0">Уникальных: <strong id="totalUniqueSuccessful">0</strong> (<span id="totalCrSuccessFromUnique">0</span>%)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <div class="card h-100 border-warning">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title text-warning">Детали фильтрации</h6>
+                                            <p class="card-text mb-1">Записей: <strong id="totalRecords">0</strong></p>
+                                            <p class="card-text mb-0">PSP: <strong id="totalPspCount">0</strong></p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
+                    <!-- Таблица статистики по initiatedPsp -->
+                    <h6 class="mb-3">Статистика по initiatedPsp</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-bordered stats-table">
+                            <thead>
+                                <tr>
+                                    <th>initiatedPsp</th>
+                                    <th>Попытки Всего</th>
+                                    <th>Попытки От Уников</th>
+                                    <th>Ввели карту всего</th>
+                                    <th>CR введения карты от всего попыток</th>
+                                    <th>Ввели карту уники</th>
+                                    <th>CR введения карты от Уников</th>
+                                    <th>Ввели удачная попытка всего</th>
+                                    <th>CR Удачных попыток от всего попыток</th>
+                                    <th>удачных попыток уники</th>
+                                    <th>CR Удачных попыток от уников</th>
+                                </tr>
+                            </thead>
+                            <tbody id="initiatedPspStatsTableBody"></tbody>
+                        </table>
+                    </div>
+
                     <!-- Таблица статистики по дням -->
                     <h6 class="mb-3">Статистика Corefy по дням</h6>
                     <div class="table-responsive">
@@ -235,6 +293,29 @@
                                 </tr>
                             </thead>
                             <tbody id="pspStatsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Таблица статистики по PSP+finalPsp -->
+                    <h6 class="mt-4 mb-3">Статистика по PSP+finalPsp</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-bordered stats-table">
+                            <thead>
+                                <tr>
+                                    <th>PSP+finalPsp</th>
+                                    <th>Попытки Всего</th>
+                                    <th>Попытки От Уников</th>
+                                    <th>Ввели карту всего</th>
+                                    <th>CR введения карты от всего попыток</th>
+                                    <th>Ввели карту уники</th>
+                                    <th>CR введения карты от Уников</th>
+                                    <th>Ввели удачная попытка всего</th>
+                                    <th>CR Удачных попыток от всего попыток</th>
+                                    <th>удачных попыток уники</th>
+                                    <th>CR Удачных попыток от уников</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pspFinalPspStatsTableBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -386,83 +467,60 @@ $(document).ready(function() {
     // Функция для расчета статистики
     function calculateStatistics(data) {
         // Сначала рассчитаем общую статистику
-        const corefyAttempts = data.filter(item => item.initiatedPsp === 'Corefy');
-        const corefyUnique = [...new Set(corefyAttempts.map(item => item.user_id))].length;
+        // Общая статистика (по той же логике, что и для PSP)
+        const allAttempts = data;
+        const uniqueUsers = [...new Set(allAttempts.map(item => item.user_id))].length;
         
-        const corefyWithCard = data.filter(item => 
-            item.initiatedPsp === 'Corefy' && 
+        const attemptWithCard = data.filter(item => 
             item.numberCard && 
             item.numberCard.toString().length > 0
         );
-        const corefyUniqueWithCard = [...new Set(corefyWithCard.map(item => item.user_id))].length;
+        const uniqueUsersWithCard = [...new Set(attemptWithCard.map(item => item.user_id))].length;
         
-        const corefySuccessful = data.filter(item => 
-            item.initiatedPsp === 'Corefy' && 
+        const successfulAttempts = data.filter(item => 
             (item.status === 'SUCCESSFUL' || item.status === 'STD')
         );
-        const corefyUniqueSuccessful = [...new Set(corefySuccessful.map(item => item.user_id))].length;
+        const uniqueUsersSuccessful = [...new Set(successfulAttempts.map(item => item.user_id))].length;
         
         // CR (Conversion Rate) calculations для общей статистики
-        const crCardFromTotal = corefyAttempts.length > 0 
-            ? (corefyWithCard.length / corefyAttempts.length * 100).toFixed(2) 
+        const crCardFromTotal = allAttempts.length > 0 
+            ? (attemptWithCard.length / allAttempts.length * 100).toFixed(2) 
             : 0;
             
-        const crCardFromUnique = corefyUnique > 0 
-            ? (corefyUniqueWithCard / corefyUnique * 100).toFixed(2) 
+        const crCardFromUnique = uniqueUsers > 0 
+            ? (uniqueUsersWithCard / uniqueUsers * 100).toFixed(2) 
             : 0;
             
-        const crSuccessFromTotal = corefyAttempts.length > 0 
-            ? (corefySuccessful.length / corefyAttempts.length * 100).toFixed(2) 
+        const crSuccessFromTotal = allAttempts.length > 0 
+            ? (successfulAttempts.length / allAttempts.length * 100).toFixed(2) 
             : 0;
             
-        const crSuccessFromUnique = corefyUnique > 0 
-            ? (corefyUniqueSuccessful / corefyUnique * 100).toFixed(2) 
+        const crSuccessFromUnique = uniqueUsers > 0 
+            ? (uniqueUsersSuccessful / uniqueUsers * 100).toFixed(2) 
             : 0;
         
-        // Заполняем блок общей статистики
-        $('#totalStats').html(`
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 border-primary">
-                    <div class="card-body p-3">
-                        <h6 class="card-title text-primary">Все попытки</h6>
-                        <p class="card-text mb-1">Всего: <strong>${corefyAttempts.length}</strong></p>
-                        <p class="card-text mb-0">Уникальных: <strong>${corefyUnique}</strong></p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 border-info">
-                    <div class="card-body p-3">
-                        <h6 class="card-title text-info">Ввели карту</h6>
-                        <p class="card-text mb-1">Всего: <strong>${corefyWithCard.length}</strong> (${crCardFromTotal}%)</p>
-                        <p class="card-text mb-0">Уникальных: <strong>${corefyUniqueWithCard}</strong> (${crCardFromUnique}%)</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 border-success">
-                    <div class="card-body p-3">
-                        <h6 class="card-title text-success">Успешные попытки</h6>
-                        <p class="card-text mb-1">Всего: <strong>${corefySuccessful.length}</strong> (${crSuccessFromTotal}%)</p>
-                        <p class="card-text mb-0">Уникальных: <strong>${corefyUniqueSuccessful}</strong> (${crSuccessFromUnique}%)</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3 mb-3">
-                <div class="card h-100 border-warning">
-                    <div class="card-body p-3">
-                        <h6 class="card-title text-warning">Детали фильтрации</h6>
-                        <p class="card-text mb-1">Записей: <strong>${data.length}</strong></p>
-                        <p class="card-text mb-0">PSP: <strong>${[...new Set(data.map(item => item.psp).filter(Boolean))].length}</strong></p>
-                    </div>
-                </div>
-            </div>
-        `);
+        // Заполняем элементы блока общей статистики
+        $('#totalAttempts').text(allAttempts.length);
+        $('#totalUniqueUsers').text(uniqueUsers);
+        $('#totalWithCard').text(attemptWithCard.length);
+        $('#totalCrCardFromTotal').text(crCardFromTotal);
+        $('#totalUniqueWithCard').text(uniqueUsersWithCard);
+        $('#totalCrCardFromUnique').text(crCardFromUnique);
+        $('#totalSuccessful').text(successfulAttempts.length);
+        $('#totalCrSuccessFromTotal').text(crSuccessFromTotal);
+        $('#totalUniqueSuccessful').text(uniqueUsersSuccessful);
+        $('#totalCrSuccessFromUnique').text(crSuccessFromUnique);
+        $('#totalRecords').text(data.length);
+        $('#totalPspCount').text([...new Set(data.map(item => item.psp).filter(Boolean))].length);
 
         // Группируем данные по дате (только дата без времени)
         const groupedByDate = {};
         // Группируем данные по PSP
         const groupedByPSP = {};
+        // Группируем данные по initiatedPsp
+        const groupedByInitiatedPSP = {};
+        // Группируем данные по PSP+finalPsp
+        const groupedByPSPFinalPSP = {};
         
         data.forEach(item => {
             if (item.datetimeCreated) {
@@ -483,11 +541,33 @@ $(document).ready(function() {
                 
                 groupedByPSP[item.psp].push(item);
             }
+            
+            // Группировка по initiatedPsp
+            if (item.initiatedPsp) {
+                if (!groupedByInitiatedPSP[item.initiatedPsp]) {
+                    groupedByInitiatedPSP[item.initiatedPsp] = [];
+                }
+                
+                groupedByInitiatedPSP[item.initiatedPsp].push(item);
+            }
+            
+            // Группировка по PSP+finalPsp
+            if (item.psp && item.finalPsp) {
+                const pspPlusFinalPsp = `${item.psp}+${item.finalPsp}`;
+                
+                if (!groupedByPSPFinalPSP[pspPlusFinalPsp]) {
+                    groupedByPSPFinalPSP[pspPlusFinalPsp] = [];
+                }
+                
+                groupedByPSPFinalPSP[pspPlusFinalPsp].push(item);
+            }
         });
         
-        // Очищаем контейнер статистики
+        // Очищаем контейнеры статистики
         $('#statsTableBody').empty();
         $('#pspStatsTableBody').empty();
+        $('#initiatedPspStatsTableBody').empty();
+        $('#pspFinalPspStatsTableBody').empty();
         
         // Для каждой даты рассчитываем статистику
         Object.keys(groupedByDate).sort().forEach(date => {
@@ -587,6 +667,118 @@ $(document).ready(function() {
             $('#pspStatsTableBody').append(`
                 <tr>
                     <td>${pspName}</td>
+                    <td>${allAttempts.length}</td>
+                    <td>${uniqueUsers}</td>
+                    <td>${attemptWithCard.length}</td>
+                    <td>${crCardFromTotal}%</td>
+                    <td>${uniqueUsersWithCard}</td>
+                    <td>${crCardFromUnique}%</td>
+                    <td>${successfulAttempts.length}</td>
+                    <td>${crSuccessFromTotal}%</td>
+                    <td>${uniqueUsersSuccessful}</td>
+                    <td>${crSuccessFromUnique}%</td>
+                </tr>
+            `);
+        });
+
+        // Для каждого initiatedPsp рассчитываем статистику
+        Object.keys(groupedByInitiatedPSP).sort().forEach(initiatedPspName => {
+            const initiatedPspData = groupedByInitiatedPSP[initiatedPspName];
+            
+            // Все попытки для данного initiatedPsp
+            const allAttempts = initiatedPspData;
+            const uniqueUsers = [...new Set(allAttempts.map(item => item.user_id))].length;
+            
+            // Все попытки с введенной картой
+            const attemptWithCard = initiatedPspData.filter(item => 
+                item.numberCard && 
+                item.numberCard.toString().length > 0
+            );
+            const uniqueUsersWithCard = [...new Set(attemptWithCard.map(item => item.user_id))].length;
+            
+            // Успешные попытки
+            const successfulAttempts = initiatedPspData.filter(item => 
+                (item.status === 'SUCCESSFUL' || item.status === 'STD')
+            );
+            const uniqueUsersSuccessful = [...new Set(successfulAttempts.map(item => item.user_id))].length;
+            
+            // CR (Conversion Rate) calculations
+            const crCardFromTotal = allAttempts.length > 0 
+                ? (attemptWithCard.length / allAttempts.length * 100).toFixed(2) 
+                : 0;
+                
+            const crCardFromUnique = uniqueUsers > 0 
+                ? (uniqueUsersWithCard / uniqueUsers * 100).toFixed(2) 
+                : 0;
+                
+            const crSuccessFromTotal = allAttempts.length > 0 
+                ? (successfulAttempts.length / allAttempts.length * 100).toFixed(2) 
+                : 0;
+                
+            const crSuccessFromUnique = uniqueUsers > 0 
+                ? (uniqueUsersSuccessful / uniqueUsers * 100).toFixed(2) 
+                : 0;
+            
+            // Добавляем строку в таблицу статистики по initiatedPsp
+            $('#initiatedPspStatsTableBody').append(`
+                <tr>
+                    <td>${initiatedPspName}</td>
+                    <td>${allAttempts.length}</td>
+                    <td>${uniqueUsers}</td>
+                    <td>${attemptWithCard.length}</td>
+                    <td>${crCardFromTotal}%</td>
+                    <td>${uniqueUsersWithCard}</td>
+                    <td>${crCardFromUnique}%</td>
+                    <td>${successfulAttempts.length}</td>
+                    <td>${crSuccessFromTotal}%</td>
+                    <td>${uniqueUsersSuccessful}</td>
+                    <td>${crSuccessFromUnique}%</td>
+                </tr>
+            `);
+        });
+        
+        // Для каждого PSP+finalPsp рассчитываем статистику
+        Object.keys(groupedByPSPFinalPSP).sort().forEach(combinationName => {
+            const combinationData = groupedByPSPFinalPSP[combinationName];
+            
+            // Все попытки для данной комбинации
+            const allAttempts = combinationData;
+            const uniqueUsers = [...new Set(allAttempts.map(item => item.user_id))].length;
+            
+            // Все попытки с введенной картой
+            const attemptWithCard = combinationData.filter(item => 
+                item.numberCard && 
+                item.numberCard.toString().length > 0
+            );
+            const uniqueUsersWithCard = [...new Set(attemptWithCard.map(item => item.user_id))].length;
+            
+            // Успешные попытки
+            const successfulAttempts = combinationData.filter(item => 
+                (item.status === 'SUCCESSFUL' || item.status === 'STD')
+            );
+            const uniqueUsersSuccessful = [...new Set(successfulAttempts.map(item => item.user_id))].length;
+            
+            // CR (Conversion Rate) calculations
+            const crCardFromTotal = allAttempts.length > 0 
+                ? (attemptWithCard.length / allAttempts.length * 100).toFixed(2) 
+                : 0;
+                
+            const crCardFromUnique = uniqueUsers > 0 
+                ? (uniqueUsersWithCard / uniqueUsers * 100).toFixed(2) 
+                : 0;
+                
+            const crSuccessFromTotal = allAttempts.length > 0 
+                ? (successfulAttempts.length / allAttempts.length * 100).toFixed(2) 
+                : 0;
+                
+            const crSuccessFromUnique = uniqueUsers > 0 
+                ? (uniqueUsersSuccessful / uniqueUsers * 100).toFixed(2) 
+                : 0;
+            
+            // Добавляем строку в таблицу статистики по PSP+finalPsp
+            $('#pspFinalPspStatsTableBody').append(`
+                <tr>
+                    <td>${combinationName}</td>
                     <td>${allAttempts.length}</td>
                     <td>${uniqueUsers}</td>
                     <td>${attemptWithCard.length}</td>
