@@ -34,6 +34,7 @@ def get_menu_items():
         {'name': 'tasks', 'title': 'Задачи', 'icon': 'fas fa-tasks'},
         {'name': 'finance', 'title': 'Финансы', 'icon': 'fas fa-money-bill-wave'},
         {'name': 'services', 'title': 'Сервисы', 'icon': 'fas fa-cogs'},
+        {'name': 'extra', 'title': 'Экстра', 'icon': 'fas fa-star'},
         {'name': 'working_log', 'title': 'Working Log', 'icon': 'fas fa-clipboard-list'},
     ]
 
@@ -463,8 +464,16 @@ def update_id_acc_bd(request, ad_id):
 
 def working_log(request):
     return render(request, 'dashboard/working_log.html', {
-        'page_title': 'Working Log',
-        'menu_items': get_menu_items()
+        'menu_items': get_menu_items(),
+        'title': 'Working Log',
+        'page_title': 'Working Log'
+    })
+
+def extra_view(request):
+    return render(request, 'dashboard/extra.html', {
+        'menu_items': get_menu_items(),
+        'title': 'Экстра',
+        'page_title': 'Экстра'
     })
 
 def facebook_stats_view(request):

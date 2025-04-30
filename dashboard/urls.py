@@ -26,6 +26,7 @@ urlpatterns = [
     path('tasks/', views.tasks_view, name='tasks'),
     path('finance/', views.finance_view, name='finance'),
     path('services/', views.services_view, name='services'),
+    path('extra/', views.extra_view, name='extra'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('working_log/', views.working_log, name='working_log'),
     path('api/facebook/stats/data/', views.get_facebook_stats_data, name='facebook_stats_data'),
