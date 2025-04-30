@@ -127,6 +127,55 @@
     .column-buttons {
         margin-left: 10px;
     }
+    
+    /* Стили для фильтров */
+    .filter-item {
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #e9ecef;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        position: relative;
+    }
+    
+    .filter-item .close-btn {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        cursor: pointer;
+        color: #dc3545;
+    }
+    
+    .filter-dropdown {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .filter-value-list {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 5px;
+        margin-top: 5px;
+    }
+    
+    .filter-value-list .form-check {
+        margin-bottom: 5px;
+    }
+    
+    /* Стили для активных фильтров */
+    .active-filters-indicator {
+        padding: 2px 5px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        font-size: 0.75rem;
+        margin-left: 5px;
+        min-width: 20px;
+        text-align: center;
+        display: inline-block;
+    }
 </style>
 {% endblock %}
 
@@ -141,6 +190,14 @@
             </div>
         </div>
         <div class="d-flex">
+            <div class="me-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="showFiltersBtn" data-bs-toggle="modal" data-bs-target="#filtersModal">
+                    <i class="fas fa-filter"></i> Фильтры
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm d-none" id="resetFiltersBtn">
+                    <i class="fas fa-times"></i> Сбросить фильтры
+                </button>
+            </div>
             <div class="column-buttons">
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
                     <i class="fas fa-columns"></i> Настроить колонки
@@ -196,6 +253,38 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="saveColumnSelection" data-bs-dismiss="modal">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для фильтров -->
+<div class="modal fade" id="filtersModal" tabindex="-1" aria-labelledby="filtersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filtersModalLabel">Настройка фильтров</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <small>Добавьте фильтры по нужным колонкам для уточнения выборки данных.</small>
+                </div>
+                <div class="mb-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="addFilterBtn">
+                        <i class="fas fa-plus"></i> Добавить фильтр
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="clearAllFiltersBtn">
+                        <i class="fas fa-trash"></i> Очистить все фильтры
+                    </button>
+                </div>
+                <div id="filtersContainer">
+                    <!-- Фильтры будут добавляться динамически -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="applyFiltersBtn" data-bs-dismiss="modal">Применить фильтры</button>
             </div>
         </div>
     </div>
@@ -286,6 +375,9 @@ $(document).ready(function() {
     // Переменная для хранения состояния фильтра активных объявлений
     let showActiveOnly = false;
     
+    // Система фильтрации
+    let activeFilters = {};
+    
     // Функция для форматирования значений в ячейках
     function formatCellValue(column, value) {
         if (value === null || value === undefined || value === '') {
@@ -333,6 +425,8 @@ $(document).ready(function() {
     
     // Функция для отрисовки таблицы
     function renderTable() {
+        console.log("Вызов renderTable, adsData:", adsData.length);
+        
         const headerRow = $('#tableHeader');
         const tableBody = $('#tableBody');
         
@@ -348,10 +442,41 @@ $(document).ready(function() {
             headerRow.append(th);
         });
         
-        // Фильтруем данные, если установлен фильтр "Активные"
-        const filteredData = showActiveOnly 
-            ? adsData.filter(ad => ad.fb_effective_status === 'ACTIVE')
-            : adsData;
+        // Проверяем наличие данных
+        if (!adsData || adsData.length === 0) {
+            // Если данных нет, выводим сообщение
+            const row = $('<tr>');
+            const cell = $('<td>')
+                .attr('colspan', selectedColumns.length)
+                .addClass('text-center')
+                .text('Нет данных для отображения');
+            row.append(cell);
+            tableBody.append(row);
+            return;
+        }
+        
+        // Начинаем с полного набора данных
+        let filteredData = [...adsData]; // Создаем копию массива
+        
+        // Фильтруем по активности, если включено
+        if (showActiveOnly) {
+            filteredData = filteredData.filter(ad => ad.fb_effective_status === 'ACTIVE');
+        }
+        
+        // Применяем пользовательские фильтры
+        if (activeFilters && Object.keys(activeFilters).length > 0) {
+            filteredData = filteredData.filter(ad => {
+                // Проверяем соответствие всем фильтрам
+                for (const column in activeFilters) {
+                    const allowedValues = activeFilters[column];
+                    // Если значение объявления не входит в разрешенные значения фильтра, исключаем
+                    if (!allowedValues.includes(ad[column])) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
         
         // Добавляем строки с данными
         filteredData.forEach(function(ad) {
@@ -664,6 +789,225 @@ $(document).ready(function() {
     
     // Отрисовываем таблицу при загрузке страницы
     renderTable();
+    
+    // Система фильтрации - инициализация
+    let uniqueValues = {};
+    
+    // Инициализация уникальных значений для всех колонок
+    function initUniqueValues() {
+        if (!uniqueValues) uniqueValues = {};
+        
+        allColumns.forEach(column => {
+            uniqueValues[column] = new Set();
+        });
+        
+        // Проверяем наличие данных
+        if (!adsData || adsData.length === 0) {
+            console.warn("Нет данных для инициализации уникальных значений");
+            return;
+        }
+        
+        // Собираем все уникальные значения для каждой колонки
+        adsData.forEach(ad => {
+            allColumns.forEach(column => {
+                if (ad[column] !== null && ad[column] !== undefined) {
+                    uniqueValues[column].add(ad[column]);
+                }
+            });
+        });
+        
+        // Преобразуем Set в массивы и сортируем
+        allColumns.forEach(column => {
+            uniqueValues[column] = Array.from(uniqueValues[column]).sort();
+        });
+        
+        console.log("Уникальные значения инициализированы");
+    }
+    
+    // Инициализируем уникальные значения
+    initUniqueValues();
+    
+    // Функция для добавления нового фильтра
+    function addFilter(column = null, values = null) {
+        const filterItem = $('<div>').addClass('filter-item');
+        
+        const closeBtn = $('<span>').addClass('close-btn').html('<i class="fas fa-times"></i>');
+        closeBtn.on('click', function() {
+            $(this).parent().remove();
+        });
+        
+        const filterRow = $('<div>').addClass('row');
+        
+        // Выбор колонки
+        const columnSelectCol = $('<div>').addClass('col-md-5 mb-2');
+        const columnLabel = $('<label>').addClass('form-label').text('Выберите колонку');
+        const columnSelect = $('<select>').addClass('form-select form-select-sm filter-column-select');
+        
+        // Добавляем опции для выбора колонки
+        columnSelect.append($('<option>').val('').text('- Выберите колонку -'));
+        
+        allColumns.forEach(col => {
+            const option = $('<option>').val(col).text(col);
+            if (column && column === col) {
+                option.prop('selected', true);
+            }
+            columnSelect.append(option);
+        });
+        
+        columnSelectCol.append(columnLabel, columnSelect);
+        
+        // Контейнер для значений
+        const valuesCol = $('<div>').addClass('col-md-7 mb-2');
+        const valuesContainer = $('<div>').addClass('filter-values-container');
+        
+        // Если колонка уже выбрана, показываем список значений
+        if (column) {
+            showFilterValues(valuesContainer, column, values);
+        } else {
+            valuesContainer.append($('<p>').addClass('text-muted').text('Сначала выберите колонку'));
+        }
+        
+        valuesCol.append(valuesContainer);
+        
+        // Обработчик изменения колонки
+        columnSelect.on('change', function() {
+            const selectedColumn = $(this).val();
+            valuesContainer.empty();
+            
+            if (selectedColumn) {
+                showFilterValues(valuesContainer, selectedColumn);
+            } else {
+                valuesContainer.append($('<p>').addClass('text-muted').text('Сначала выберите колонку'));
+            }
+        });
+        
+        filterRow.append(columnSelectCol, valuesCol);
+        filterItem.append(closeBtn, filterRow);
+        
+        $('#filtersContainer').append(filterItem);
+    }
+    
+    // Функция для отображения списка значений для выбранной колонки
+    function showFilterValues(container, column, selectedValues = null) {
+        const label = $('<label>').addClass('form-label').text('Выберите значения');
+        const valuesList = $('<div>').addClass('filter-value-list');
+        
+        // Создаем чекбоксы для каждого уникального значения
+        if (uniqueValues[column] && uniqueValues[column].length > 0) {
+            uniqueValues[column].forEach(value => {
+                const formCheck = $('<div>').addClass('form-check');
+                const checkbox = $('<input>')
+                    .addClass('form-check-input filter-value-checkbox')
+                    .attr('type', 'checkbox')
+                    .attr('value', value)
+                    .attr('id', `filter-${column}-${value}`);
+                
+                // Если есть выбранные значения, отмечаем соответствующие чекбоксы
+                if (selectedValues && selectedValues.includes(value)) {
+                    checkbox.prop('checked', true);
+                }
+                
+                const checkLabel = $('<label>')
+                    .addClass('form-check-label')
+                    .attr('for', `filter-${column}-${value}`)
+                    .text(value);
+                
+                formCheck.append(checkbox, checkLabel);
+                valuesList.append(formCheck);
+            });
+        } else {
+            valuesList.append($('<p>').addClass('text-muted').text('Нет данных для фильтрации'));
+        }
+        
+        // Кнопки для выбора всех/снятия всех
+        const selectBtns = $('<div>').addClass('d-flex gap-2 mt-2');
+        const selectAllBtn = $('<button>').addClass('btn btn-outline-primary btn-sm').text('Выбрать все');
+        const deselectAllBtn = $('<button>').addClass('btn btn-outline-secondary btn-sm').text('Снять все');
+        
+        selectAllBtn.on('click', function() {
+            valuesList.find('input[type="checkbox"]').prop('checked', true);
+        });
+        
+        deselectAllBtn.on('click', function() {
+            valuesList.find('input[type="checkbox"]').prop('checked', false);
+        });
+        
+        selectBtns.append(selectAllBtn, deselectAllBtn);
+        
+        container.append(label, valuesList, selectBtns);
+    }
+    
+    // Добавление фильтра по кнопке
+    $('#addFilterBtn').on('click', function() {
+        addFilter();
+    });
+    
+    // Очистка всех фильтров
+    $('#clearAllFiltersBtn').on('click', function() {
+        $('#filtersContainer').empty();
+    });
+    
+    // Применение фильтров
+    $('#applyFiltersBtn').on('click', function() {
+        // Сначала удаляем старый индикатор
+        $('.active-filters-indicator').remove();
+        
+        activeFilters = {};
+        let hasActiveFilters = false;
+        
+        // Собираем все значения фильтров
+        $('.filter-item').each(function() {
+            const column = $(this).find('.filter-column-select').val();
+            if (!column) return;
+            
+            const selectedValues = [];
+            $(this).find('.filter-value-checkbox:checked').each(function() {
+                selectedValues.push($(this).val());
+            });
+            
+            if (selectedValues.length > 0) {
+                activeFilters[column] = selectedValues;
+                hasActiveFilters = true;
+            }
+        });
+        
+        console.log("Применяем фильтры:", activeFilters, "hasActiveFilters:", hasActiveFilters);
+        
+        // Если есть активные фильтры, показываем кнопку сброса и индикатор
+        if (hasActiveFilters) {
+            $('#resetFiltersBtn').removeClass('d-none');
+            $('#showFiltersBtn').append(
+                $('<span>').addClass('active-filters-indicator').text(Object.keys(activeFilters).length)
+            );
+        } else {
+            $('#resetFiltersBtn').addClass('d-none');
+        }
+        
+        // Перерисовываем таблицу с учетом фильтров
+        renderTable();
+    });
+    
+    // Сброс фильтров
+    $('#resetFiltersBtn').on('click', function() {
+        activeFilters = {};
+        $(this).addClass('d-none');
+        $('.active-filters-indicator').remove();
+        renderTable();
+    });
+    
+    // При открытии модального окна фильтров заполняем существующие фильтры
+    $('#filtersModal').on('show.bs.modal', function() {
+        $('#filtersContainer').empty();
+        
+        if (Object.keys(activeFilters).length > 0) {
+            for (const [column, values] of Object.entries(activeFilters)) {
+                addFilter(column, values);
+            }
+        } else {
+            // Если нет активных фильтров, добавляем пустой фильтр
+            addFilter();
+        }
+    });
 });
 </script>
 {% endblock %} 
