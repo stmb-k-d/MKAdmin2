@@ -278,6 +278,8 @@
         font-weight: bold;
     }
 </style>
+<!-- CSS для выбора диапазона дат -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 {% endblock %}
 
 {% block content %}
@@ -294,9 +296,11 @@
                 <div class="d-flex flex-wrap align-items-center">
                     <div class="date-filter me-3">
                         <div class="input-group">
-                            <input type="date" id="dateFrom" class="form-control form-control-sm" placeholder="С">
-                            <span class="input-group-text">—</span>
-                            <input type="date" id="dateTo" class="form-control form-control-sm" placeholder="По">
+                            <!-- Видимый комбинированный фильтр периода -->
+                            <input type="text" id="dateRange" class="form-control form-control-sm" placeholder="Период">
+                            <!-- Сохраняем оригинальные поля, но скрываем их, чтобы не ломать существующий JS -->
+                            <input type="hidden" id="dateFrom">
+                            <input type="hidden" id="dateTo">
                             <button id="applyDateFilter" class="btn btn-sm btn-primary">
                                 <i class="fas fa-filter"></i>
                             </button>
@@ -452,8 +456,14 @@ function highlightRow(row, event) {
 {% endblock %}
 
 {% block extra_js %}
+<!-- Moment.js и Daterangepicker (только для этой страницы) -->
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Подключаем moment и daterangepicker (если они еще не подключены глобально)
+    // ... existing code ...
+    
     // Инициализация элементов фильтра по датам
     const dateFrom = document.getElementById('dateFrom');
     const dateTo = document.getElementById('dateTo');
@@ -462,6 +472,67 @@ $(document).ready(function() {
     const refreshTableBtn = document.getElementById('refreshTable');
     const activeOnlyFilter = document.getElementById('activeOnlyFilter');
     const searchInput = document.getElementById('searchInput');
+    
+    /* === Daterangepicker и логика скрытых полей === */
+    const dateRangeInput = $('#dateRange');
+
+    // Конфиг быстрых диапазонов
+    const ranges = {
+        'Сегодня': [moment(), moment()],
+        'Вчера': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+        'Последние 7 дней': [moment().subtract(6, 'days'), moment()],
+        'Текущая неделя': [moment().startOf('week'), moment().endOf('week')],
+        'Текущий месяц': [moment().startOf('month'), moment().endOf('month')],
+        'Предыдущий месяц': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+        'Последние 30 дней': [moment().subtract(29, 'days'), moment()]
+    };
+
+    // Устанавливаем начальное значение видимого поля из URL или шаблона
+    let initialStart = moment(dateFrom ? dateFrom.value : undefined);
+    let initialEnd   = moment(dateTo ? dateTo.value : undefined);
+    if (!initialStart.isValid()) initialStart = moment().subtract(1, 'month');
+    if (!initialEnd.isValid())   initialEnd   = moment();
+
+    function setHiddenFields(start, end) {
+        // Обновляем скрытые input, чтобы остальной код продолжал работать
+        dateFrom.value = start.format('YYYY-MM-DD');
+        dateTo.value   = end.format('YYYY-MM-DD');
+    }
+
+    setHiddenFields(initialStart, initialEnd);
+
+    dateRangeInput.daterangepicker({
+        startDate: initialStart,
+        endDate: initialEnd,
+        locale: {
+            format: 'YYYY-MM-DD',
+            applyLabel: 'Применить',
+            cancelLabel: 'Отмена',
+            fromLabel: 'С',
+            toLabel: 'По',
+            customRangeLabel: 'Произвольный',
+            daysOfWeek: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+            monthNames: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+            firstDay: 1
+        },
+        ranges: ranges,
+        opens: 'left',
+        autoUpdateInput: true,
+    }, function(start, end) {
+        setHiddenFields(start, end);
+    });
+
+    // При клике на resetDateFilter очищаем и видимое поле
+    $('#resetDateFilter').on('click', function() {
+        dateRangeInput.val('');
+        dateFrom.value = '';
+        dateTo.value = '';
+        // Дополнительно обновляем URL как и раньше
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('date_from');
+        currentUrl.searchParams.delete('date_to');
+        window.location.href = currentUrl.toString();
+    });
     
     // Восстанавливаем состояние переключателя "Активные" из localStorage
     try {
@@ -507,6 +578,16 @@ $(document).ready(function() {
         {% endif %}
     }
     
+    // Синхронизируем видимое поле после возможного изменения скрытых дат вышестоящим кодом
+    if (dateFrom.value && dateTo.value) {
+        const drp = dateRangeInput.data('daterangepicker');
+        if (drp) {
+            drp.setStartDate(moment(dateFrom.value));
+            drp.setEndDate(moment(dateTo.value));
+            dateRangeInput.val(dateFrom.value + ' - ' + dateTo.value);
+        }
+    }
+    
     // Обработчик кнопки применения фильтра
     applyDateFilter.addEventListener('click', function() {
         if (dateFrom.value && dateTo.value) {
@@ -522,17 +603,6 @@ $(document).ready(function() {
         }
     });
     
-    // Обработчик кнопки сброса фильтра
-    resetDateFilter.addEventListener('click', function() {
-        // Сбрасываем параметры дат в URL
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.delete('date_from');
-        currentUrl.searchParams.delete('date_to');
-        
-        // Переходим по URL без фильтров
-        window.location.href = currentUrl.toString();
-    });
-
     // Обработчик для кнопки "Обновить таблицу"
     refreshTableBtn.addEventListener('click', function() {
         // Показываем индикатор загрузки в кнопке
