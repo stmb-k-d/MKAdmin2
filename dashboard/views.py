@@ -325,7 +325,7 @@ def ad_detail(request, ad_id):
     return render(request, 'dashboard/ad_detail.html', {
         'menu_items': get_menu_items(),
         'title': f'Ad Detail: {ad_id}',
-        'page_title': f'id_acc_bd:{ad["id_acc_bd"]} rk_name:{ad["rk_name"]} ad_name:{ad["ad_name"]} ad_id:{ad_id}',
+        'page_title': f'Объявление: {ad_id}',
         'ad': ad,
         'daily_stats': daily_stats
     })

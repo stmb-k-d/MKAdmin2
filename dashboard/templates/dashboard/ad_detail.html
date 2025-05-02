@@ -297,15 +297,14 @@
                                         <div class="detail-value">{{ ad.install_or_dep|default:"-" }}</div>
                                     </div>
                                     <div class="detail-row">
-                                        <div class="detail-label">creative_thumbnail_url</div>
+                                        <div class="detail-label">fb_effective_status</div>
                                         <div class="detail-value">
-                                            {% if ad.creative_thumbnail_url %}
-                                                <a href="{{ ad.creative_thumbnail_url }}" target="_blank" class="url-preview" title="{{ ad.creative_thumbnail_url }}">
-                                                    {{ ad.creative_thumbnail_url|truncatechars:25 }}
-                                                </a>
-                                            {% else %}
-                                                -
-                                            {% endif %}
+                                            <span class="status-badge 
+                                                {% if ad.fb_effective_status == 'ACTIVE' %}status-active
+                                                {% elif ad.fb_effective_status == 'PAUSED' %}status-paused
+                                                {% else %}status-disabled{% endif %}">
+                                                {{ ad.fb_effective_status }}
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="detail-row">
@@ -324,116 +323,142 @@
             </div>
         </div>
         
+        <!-- Блок Управление -->
+        <div class="col-12 mb-4">
+            <div class="card detail-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Управление</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-start">
+                        <button type="button" class="btn btn-success me-3" disabled>
+                            <i class="fas fa-play me-1"></i> Запустить
+                        </button>
+                        <button type="button" class="btn btn-danger" disabled>
+                            <i class="fas fa-stop me-1"></i> Остановить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Верхняя секция: Инфо слева, Расширенная статистика справа -->
         <div class="row">
             <!-- Информационный блок слева -->
             <div class="col-md-6">
                 <div class="card detail-card">
                     <div class="card-header">
-                        <h5 class="mb-0">Информация об объявлении</h5>
+                        <div class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#infoBlock" aria-expanded="false">
+                            <h5 class="mb-0">Информация об объявлении</h5>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="detail-row">
-                            <div class="detail-label">id_acc_bd</div>
-                            <div class="detail-value">{{ ad.id_acc_bd }}</div>
-                            <div class="detail-action">
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editIdAccBdModal">
-                                    <i class="fas fa-edit"></i> Изменить
-                                </button>
+                </div>
+                <div class="collapse" id="infoBlock">
+                    <div class="card detail-card">
+                        <div class="card-body">
+                            <div class="detail-row">
+                                <div class="detail-label">id_acc_bd</div>
+                                <div class="detail-value">{{ ad.id_acc_bd }}</div>
+                                <div class="detail-action">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editIdAccBdModal">
+                                        <i class="fas fa-edit"></i> Изменить
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">rk_name</div>
-                            <div class="detail-value">{{ ad.rk_name|default:"-" }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">ad_name</div>
-                            <div class="detail-value">{{ ad.ad_name|default:"-" }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">ad_id</div>
-                            <div class="detail-value">{{ ad.ad_id }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">install_or_dep</div>
-                            <div class="detail-value">{{ ad.install_or_dep|default:"-" }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">creative_thumbnail_url</div>
-                            <div class="detail-value">
-                                {% if ad.creative_thumbnail_url %}
-                                    <a href="{{ ad.creative_thumbnail_url }}" target="_blank" class="url-preview" title="{{ ad.creative_thumbnail_url }}">
-                                        {{ ad.creative_thumbnail_url|truncatechars:25 }}
-                                    </a>
-                                {% else %}
-                                    -
-                                {% endif %}
+                            <div class="detail-row">
+                                <div class="detail-label">rk_name</div>
+                                <div class="detail-value">{{ ad.rk_name|default:"-" }}</div>
+                                <div class="detail-action"></div>
                             </div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">last_update_fbt</div>
-                            <div class="detail-value">{{ ad.last_update_fbt|default:"-" }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">last_update_kt</div>
-                            <div class="detail-value">{{ ad.last_update_kt|default:"-" }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">fb_objective</div>
-                            <div class="detail-value">{{ ad.fb_objective }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">fb_effective_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge 
-                                    {% if ad.fb_effective_status == 'ACTIVE' %}status-active
-                                    {% elif ad.fb_effective_status == 'PAUSED' %}status-paused
-                                    {% else %}status-disabled{% endif %}">
-                                    {{ ad.fb_effective_status }}
-                                </span>
+                            <div class="detail-row">
+                                <div class="detail-label">ad_name</div>
+                                <div class="detail-value">{{ ad.ad_name|default:"-" }}</div>
+                                <div class="detail-action"></div>
                             </div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">fb_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge status-{{ ad.fb_status|default:'unknown'|lower }}">
-                                    {{ ad.fb_status|default:"Unknown" }}
-                                </span>
+                            <div class="detail-row">
+                                <div class="detail-label">ad_id</div>
+                                <div class="detail-value">{{ ad.ad_id }}</div>
+                                <div class="detail-action"></div>
                             </div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">kt_campaign_id</div>
-                            <div class="detail-value">{{ ad.kt_campaign_id }}</div>
-                            <div class="detail-action">
-                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editKtCampaignIdModal">
-                                    <i class="fas fa-edit"></i> Изменить
-                                </button>
+                            <div class="detail-row">
+                                <div class="detail-label">install_or_dep</div>
+                                <div class="detail-value">{{ ad.install_or_dep|default:"-" }}</div>
+                                <div class="detail-action"></div>
                             </div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">kt_campaign_name</div>
-                            <div class="detail-value">{{ ad.kt_campaign_name }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">creo_id</div>
-                            <div class="detail-value">{{ ad.creo_id }}</div>
-                            <div class="detail-action"></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">live_status</div>
-                            <div class="detail-value">{{ ad.live_status|default:"-" }}</div>
-                            <div class="detail-action"></div>
+                            <div class="detail-row">
+                                <div class="detail-label">creative_thumbnail_url</div>
+                                <div class="detail-value">
+                                    {% if ad.creative_thumbnail_url %}
+                                        <a href="{{ ad.creative_thumbnail_url }}" target="_blank" class="url-preview" title="{{ ad.creative_thumbnail_url }}">
+                                            {{ ad.creative_thumbnail_url|truncatechars:25 }}
+                                        </a>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">last_update_fbt</div>
+                                <div class="detail-value">{{ ad.last_update_fbt|default:"-" }}</div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">last_update_kt</div>
+                                <div class="detail-value">{{ ad.last_update_kt|default:"-" }}</div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">fb_objective</div>
+                                <div class="detail-value">{{ ad.fb_objective }}</div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">fb_effective_status</div>
+                                <div class="detail-value">
+                                    <span class="status-badge 
+                                        {% if ad.fb_effective_status == 'ACTIVE' %}status-active
+                                        {% elif ad.fb_effective_status == 'PAUSED' %}status-paused
+                                        {% else %}status-disabled{% endif %}">
+                                        {{ ad.fb_effective_status }}
+                                    </span>
+                                </div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">fb_status</div>
+                                <div class="detail-value">
+                                    <span class="status-badge status-{{ ad.fb_status|default:'unknown'|lower }}">
+                                        {{ ad.fb_status|default:"Unknown" }}
+                                    </span>
+                                </div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">kt_campaign_id</div>
+                                <div class="detail-value">{{ ad.kt_campaign_id }}</div>
+                                <div class="detail-action">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editKtCampaignIdModal">
+                                        <i class="fas fa-edit"></i> Изменить
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">kt_campaign_name</div>
+                                <div class="detail-value">{{ ad.kt_campaign_name }}</div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">creo_id</div>
+                                <div class="detail-value">{{ ad.creo_id }}</div>
+                                <div class="detail-action"></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">live_status</div>
+                                <div class="detail-value">{{ ad.live_status|default:"-" }}</div>
+                                <div class="detail-action"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -876,14 +901,13 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Инициализация скрываемого блока
-        const collapseToggle = document.querySelector('.collapse-toggle');
-        if (collapseToggle) {
-            collapseToggle.addEventListener('click', function() {
+        // Инициализация скрываемых блоков
+        document.querySelectorAll('.collapse-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
                 const expanded = this.getAttribute('aria-expanded') === 'true';
                 this.setAttribute('aria-expanded', !expanded);
             });
-        }
+        });
         
         // Обработчик открытия модального окна kt_campaign_id
         $('#editKtCampaignIdModal').on('shown.bs.modal', function () {
