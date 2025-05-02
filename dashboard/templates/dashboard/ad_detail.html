@@ -3,7 +3,11 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block page_title %}{{ page_title }}{% endblock %}
+{% block page_title %}
+<div class="text-center">
+    <span style="word-spacing: 15px;">{{ page_title }}</span>
+</div>
+{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -89,6 +93,14 @@
     
     .collapse-toggle.collapsed i {
         transform: rotate(-90deg);
+    }
+    
+    .collapse-toggle[aria-expanded="true"] i {
+        transform: rotate(180deg);
+    }
+    
+    .collapse-toggle[aria-expanded="false"] i {
+        transform: rotate(0deg);
     }
     
     .statistic-card {
@@ -198,15 +210,16 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <!-- Кнопка для теста Bootstrap и модальных окон -->
-        <div class="col-12 mb-3">
-            <button id="testBootstrapButton" type="button" class="btn btn-info" onclick="testBootstrap()">
-                Проверить Bootstrap и модальные окна
-            </button>
-            <div id="bootstrapStatus" class="mt-2"></div>
+    <!-- Кнопка возврата к списку объявлений -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{% url 'dashboard:ads' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Назад к списку объявлений
+            </a>
         </div>
-        
+    </div>
+    
+    <div class="row">
         <!-- Блок для отображения сообщений -->
         {% if messages %}
         <div class="col-12">
@@ -218,14 +231,6 @@
             {% endfor %}
         </div>
         {% endif %}
-        
-        <div class="row mb-3">
-            <div class="col-12">
-                <a href="{% url 'dashboard:ads' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-left"></i> Назад к списку объявлений
-                </a>
-            </div>
-        </div>
         
         <!-- Верхняя секция: Инфо слева, Расширенная статистика справа -->
         <div class="row">
@@ -246,16 +251,20 @@
                             </div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">camp_id</div>
-                            <div class="detail-value">{{ ad.camp_id }}</div>
+                            <div class="detail-label">rk_name</div>
+                            <div class="detail-value">{{ ad.rk_name|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">adset_id</div>
-                            <div class="detail-value">{{ ad.adset_id }}</div>
+                            <div class="detail-label">ad_name</div>
+                            <div class="detail-value">{{ ad.ad_name|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">ad_id</div>
                             <div class="detail-value">{{ ad.ad_id }}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">install_or_dep</div>
+                            <div class="detail-value">{{ ad.install_or_dep|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">creative_thumbnail_url</div>
@@ -268,20 +277,12 @@
                             </div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">ad_name</div>
-                            <div class="detail-value">{{ ad.ad_name|default:"-" }}</div>
+                            <div class="detail-label">last_update_fbt</div>
+                            <div class="detail-value">{{ ad.last_update_fbt|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">adset_name</div>
-                            <div class="detail-value">{{ ad.adset_name|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">camp_name</div>
-                            <div class="detail-value">{{ ad.camp_name|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">rk_name</div>
-                            <div class="detail-value">{{ ad.rk_name|default:"-" }}</div>
+                            <div class="detail-label">last_update_kt</div>
+                            <div class="detail-value">{{ ad.last_update_kt|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">fb_objective</div>
@@ -307,46 +308,6 @@
                             </div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">ad_effective_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge status-{{ ad.ad_effective_status|default:'unknown'|lower }}">
-                                    {{ ad.ad_effective_status|default:"Unknown" }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">adset_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge status-{{ ad.adset_status|default:'unknown'|lower }}">
-                                    {{ ad.adset_status|default:"Unknown" }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">adset_effective_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge status-{{ ad.adset_effective_status|default:'unknown'|lower }}">
-                                    {{ ad.adset_effective_status|default:"Unknown" }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">camp_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge status-{{ ad.camp_status|default:'unknown'|lower }}">
-                                    {{ ad.camp_status|default:"Unknown" }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">camp_effective_status</div>
-                            <div class="detail-value">
-                                <span class="status-badge status-{{ ad.camp_effective_status|default:'unknown'|lower }}">
-                                    {{ ad.camp_effective_status|default:"Unknown" }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="detail-row">
                             <div class="detail-label">kt_campaign_id</div>
                             <div class="detail-value">
                                 {{ ad.kt_campaign_id }}
@@ -364,20 +325,38 @@
                             <div class="detail-value">{{ ad.creo_id }}</div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">type_optimization</div>
-                            <div class="detail-value">{{ ad.type_optimization|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">install_or_dep</div>
-                            <div class="detail-value">{{ ad.install_or_dep|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">comment</div>
-                            <div class="detail-value">{{ ad.comment|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
                             <div class="detail-label">live_status</div>
                             <div class="detail-value">{{ ad.live_status|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Расширенная статистика справа -->
+            <div class="col-md-6">
+                <div class="card detail-card">
+                    <div class="card-header">
+                        <div class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#additionalInfoBody" aria-expanded="false">
+                            <h5 class="mb-0">Дополнительная информация</h5>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="card-body collapse" id="additionalInfoBody">
+                        <div class="detail-row">
+                            <div class="detail-label">camp_id</div>
+                            <div class="detail-value">{{ ad.camp_id }}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_id</div>
+                            <div class="detail-value">{{ ad.adset_id }}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">adset_name</div>
+                            <div class="detail-value">{{ ad.adset_name|default:"-" }}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">camp_name</div>
+                            <div class="detail-value">{{ ad.camp_name|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">ad_effective_status</div>
@@ -418,6 +397,14 @@
                                     {{ ad.camp_effective_status|default:"Unknown" }}
                                 </span>
                             </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">type_optimization</div>
+                            <div class="detail-value">{{ ad.type_optimization|default:"-" }}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">comment</div>
+                            <div class="detail-value">{{ ad.comment|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
                             <div class="detail-label">thumbnail_url</div>
@@ -442,14 +429,6 @@
                             <div class="detail-value">{{ ad.app_id|default:"-" }}</div>
                         </div>
                         <div class="detail-row">
-                            <div class="detail-label">last_update_fbt</div>
-                            <div class="detail-value">{{ ad.last_update_fbt|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">last_update_kt</div>
-                            <div class="detail-value">{{ ad.last_update_kt|default:"-" }}</div>
-                        </div>
-                        <div class="detail-row">
                             <div class="detail-label">campaign_id</div>
                             <div class="detail-value">{{ ad.campaign_id|default:"-" }}</div>
                         </div>
@@ -457,17 +436,6 @@
                             <div class="detail-label">kt_ad_id</div>
                             <div class="detail-value">{{ ad.kt_ad_id|default:"-" }}</div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Расширенная статистика справа -->
-            <div class="col-md-6">
-                <div class="card detail-card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Расширенная статистика</h5>
-                    </div>
-                    <div class="card-body">
                         <div class="detail-row">
                             <div class="detail-label">fb_quality_score_organic</div>
                             <div class="detail-value">{{ ad.fb_quality_score_organic|default:"0" }}</div>
@@ -765,129 +733,81 @@
             </div>
         </div>
     </div>
-
-    <!-- Тестовое модальное окно -->
-    <div class="modal fade" id="testModal" tabindex="-1" aria-labelledby="testModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="testModalLabel">Тестовое модальное окно</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Если вы видите это окно, значит модальные окна работают корректно.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
-    console.log("Инициализация модальных окон и обработчиков");
-    
-    // Обработчик открытия модального окна kt_campaign_id
-    $('#editKtCampaignIdModal').on('shown.bs.modal', function () {
-        console.log("Модальное окно для kt_campaign_id открыто");
-        $('#kt_campaign_id').focus();
-    });
-    
-    // Обработчик открытия модального окна id_acc_bd
-    $('#editIdAccBdModal').on('shown.bs.modal', function () {
-        console.log("Модальное окно для id_acc_bd открыто");
-        $('#id_acc_bd').focus();
-    });
-    
-    // Сортировка таблицы
-    $('.table-daily-stats th').on('click', function() {
-        var table = $(this).parents('table').eq(0);
-        var rows = table.find('tr:gt(0)').toArray().sort(compareCells($(this).index()));
-        
-        // Проверяем, есть ли уже класс сортировки на этой колонке
-        if ($(this).hasClass('sorted-asc')) {
-            // Если был по возрастанию, меняем на убывание
-            this.asc = false;
-            rows = rows.reverse();
-            $(this).removeClass('sorted-asc').addClass('sorted-desc');
-        } else if ($(this).hasClass('sorted-desc')) {
-            // Если был по убыванию, меняем на возрастание
-            this.asc = true;
-            $(this).removeClass('sorted-desc').addClass('sorted-asc');
-        } else {
-            // Если колонка не была отсортирована, устанавливаем сортировку по возрастанию
-            this.asc = true;
-            // Удаляем классы сортировки со всех колонок
-            table.find('th').removeClass('sorted-asc sorted-desc');
-            $(this).addClass('sorted-asc');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация скрываемого блока
+        const collapseToggle = document.querySelector('.collapse-toggle');
+        if (collapseToggle) {
+            collapseToggle.addEventListener('click', function() {
+                const expanded = this.getAttribute('aria-expanded') === 'true';
+                this.setAttribute('aria-expanded', !expanded);
+            });
         }
         
-        // Перестраиваем таблицу
-        for (var i = 0; i < rows.length; i++) {
-            table.append(rows[i]);
-        }
-    });
-    
-    function compareCells(index) {
-        return function(a, b) {
-            var valA = getCellValue(a, index);
-            var valB = getCellValue(b, index);
-            
-            // Проверка, является ли значение числом
-            if (!isNaN(valA) && !isNaN(valB)) {
-                return valA - valB;
-            }
-            
-            // Для дат в формате DD.MM.YYYY
-            if (valA.match(/\d{2}\.\d{2}\.\d{4}/) && valB.match(/\d{2}\.\d{2}\.\d{4}/)) {
-                var dateA = valA.split('.');
-                var dateB = valB.split('.');
+        // Обработчик открытия модального окна kt_campaign_id
+        $('#editKtCampaignIdModal').on('shown.bs.modal', function () {
+            console.log("Модальное окно для kt_campaign_id открыто");
+            $('#kt_campaign_id').focus();
+        });
+        
+        // Обработчик открытия модального окна id_acc_bd
+        $('#editIdAccBdModal').on('shown.bs.modal', function () {
+            console.log("Модальное окно для id_acc_bd открыто");
+            $('#id_acc_bd').focus();
+        });
+        
+        // Инициализация сортировки для таблицы статистики
+        document.querySelectorAll('.table-daily-stats th').forEach(th => {
+            th.addEventListener('click', () => {
+                const table = th.closest('table');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const index = Array.from(th.parentNode.children).indexOf(th);
+                const isNumeric = !isNaN(parseFloat(rows[0].querySelectorAll('td')[index].textContent));
+                const isDateColumn = index === 0;
                 
-                // Преобразуем в формат YYYY-MM-DD для сравнения
-                var dateStringA = dateA[2] + '-' + dateA[1] + '-' + dateA[0];
-                var dateStringB = dateB[2] + '-' + dateB[1] + '-' + dateB[0];
+                // Определяем направление сортировки
+                let direction = th.classList.contains('sorted-asc') ? -1 : 1;
                 
-                return new Date(dateStringA) - new Date(dateStringB);
-            }
-            
-            return valA.localeCompare(valB);
-        };
-    }
-    
-    function getCellValue(row, index) {
-        return $(row).children('td').eq(index).text().trim();
-    }
-});
-
-function testBootstrap() {
-    console.log("Тестирование Bootstrap");
-    const status = $('#bootstrapStatus');
-    
-    // Проверяем наличие Bootstrap
-    if (typeof bootstrap !== 'undefined') {
-        status.html('<div class="alert alert-success">Bootstrap загружен корректно.</div>');
-        console.log("Bootstrap доступен:", bootstrap);
-        
-        // Проверяем доступность Modal
-        if (typeof bootstrap.Modal !== 'undefined') {
-            status.append('<div class="alert alert-success">Модальные окна доступны.</div>');
-            console.log("Modal доступен:", bootstrap.Modal);
-            
-            // Открываем тестовое модальное окно
-            const testModal = new bootstrap.Modal(document.getElementById('testModal'));
-            testModal.show();
-        } else {
-            status.append('<div class="alert alert-danger">Модальные окна НЕ доступны!</div>');
-            console.error("Modal не доступен!");
-        }
-    } else {
-        status.html('<div class="alert alert-danger">Bootstrap НЕ загружен!</div>');
-        console.error("Bootstrap не доступен!");
-    }
-}
+                // Удаляем классы сортировки со всех заголовков
+                table.querySelectorAll('th').forEach(header => {
+                    header.classList.remove('sorted-asc', 'sorted-desc');
+                });
+                
+                // Добавляем класс сортировки на текущий заголовок
+                th.classList.add(direction === 1 ? 'sorted-asc' : 'sorted-desc');
+                
+                // Сортируем строки
+                rows.sort((a, b) => {
+                    let aValue = a.querySelectorAll('td')[index].textContent.trim();
+                    let bValue = b.querySelectorAll('td')[index].textContent.trim();
+                    
+                    if (isDateColumn) {
+                        // Для колонки с датой (формат DD.MM.YYYY)
+                        const aParts = aValue.split('.');
+                        const bParts = bValue.split('.');
+                        aValue = new Date(aParts[2], aParts[1] - 1, aParts[0]);
+                        bValue = new Date(bParts[2], bParts[1] - 1, bParts[0]);
+                        return direction * (aValue - bValue);
+                    } else if (isNumeric) {
+                        // Для числовых колонок
+                        aValue = parseFloat(aValue.replace(/[^\d.-]/g, ''));
+                        bValue = parseFloat(bValue.replace(/[^\d.-]/g, ''));
+                        return direction * (aValue - bValue);
+                    } else {
+                        // Для текстовых колонок
+                        return direction * aValue.localeCompare(bValue);
+                    }
+                });
+                
+                // Перестраиваем таблицу
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    });
 </script>
 {% endblock %} 
