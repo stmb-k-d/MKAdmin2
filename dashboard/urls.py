@@ -23,6 +23,7 @@ urlpatterns = [
     path('statistic/', views.statistic_view, name='statistic'),
     path('statistic/facebook/', views.facebook_stats_view, name='facebook_stats'),
     path('analytics/', views.analytics_view, name='analytics'),
+    path('bundles/', views.bundles_view, name='bundles'),
     path('tasks/', views.tasks_view, name='tasks'),
     path('finance/', views.finance_view, name='finance'),
     path('services/', views.services_view, name='services'),
@@ -31,6 +32,8 @@ urlpatterns = [
     path('deposit-stats/', views.deposit_stats_view, name='deposit_stats'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('working_log/', views.working_log, name='working_log'),
+    path('notifications/', views.notifications_view, name='notifications'),
+    path('profile/', views.profile_view, name='profile'),
     path('api/facebook/stats/data/', views.get_facebook_stats_data, name='facebook_stats_data'),
     path('api/facebook/stats/chart/', views.get_facebook_stats_chart_data, name='facebook_stats_chart'),
 ] 

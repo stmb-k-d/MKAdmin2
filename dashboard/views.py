@@ -31,11 +31,14 @@ def get_menu_items():
         },
         {'name': 'statistic', 'title': 'Статистика', 'icon': 'fas fa-chart-bar'},
         {'name': 'analytics', 'title': 'Аналитика', 'icon': 'fas fa-chart-pie'},
+        {'name': 'bundles', 'title': 'Связки', 'icon': 'fas fa-link'},
         {'name': 'tasks', 'title': 'Задачи', 'icon': 'fas fa-tasks'},
         {'name': 'finance', 'title': 'Финансы', 'icon': 'fas fa-money-bill-wave'},
         {'name': 'services', 'title': 'Сервисы', 'icon': 'fas fa-cogs'},
         {'name': 'extra', 'title': 'Экстра', 'icon': 'fas fa-star'},
         {'name': 'working_log', 'title': 'Working Log', 'icon': 'fas fa-clipboard-list'},
+        {'name': 'notifications', 'title': 'Уведомления', 'icon': 'fas fa-bell'},
+        {'name': 'profile', 'title': 'Профиль', 'icon': 'fas fa-user-circle'},
     ]
 
 def index(request):
@@ -472,8 +475,25 @@ def working_log(request):
 def extra_view(request):
     return render(request, 'dashboard/extra.html', {
         'menu_items': get_menu_items(),
-        'title': 'Экстра',
         'page_title': 'Экстра'
+    })
+
+def bundles_view(request):
+    return render(request, 'dashboard/bundles.html', {
+        'menu_items': get_menu_items(),
+        'page_title': 'Связки'
+    })
+
+def notifications_view(request):
+    return render(request, 'dashboard/notifications.html', {
+        'menu_items': get_menu_items(),
+        'page_title': 'Уведомления'
+    })
+
+def profile_view(request):
+    return render(request, 'dashboard/profile.html', {
+        'menu_items': get_menu_items(),
+        'page_title': 'Профиль'
     })
 
 def lp_view(request):
