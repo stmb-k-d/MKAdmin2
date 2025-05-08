@@ -232,8 +232,8 @@
     <!-- Кнопка возврата к списку объявлений -->
     <div class="row mb-4">
         <div class="col-12">
-            <a href="{% url 'dashboard:ads' %}" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left"></i> Назад к списку объявлений
+            <a href="{{ back_url }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> {{ back_text }}
             </a>
         </div>
     </div>

@@ -300,6 +300,21 @@ def ads(request):
     })
 
 def ad_detail(request, ad_id):
+    # Получаем HTTP_REFERER и определяем URL для возврата
+    http_referer = request.META.get('HTTP_REFERER', '')
+    
+    # Определяем, откуда пришел пользователь, и формируем соответствующий URL
+    if '/statistic/facebook/' in http_referer:
+        back_url = http_referer
+        back_text = 'Назад к статистике'
+    elif '/ads/' in http_referer:
+        back_url = http_referer
+        back_text = 'Назад к списку объявлений'
+    else:
+        # Если referer неизвестен или отсутствует, используем ссылку на ads
+        back_url = reverse('dashboard:ads')
+        back_text = 'Назад к списку объявлений'
+    
     with connection.cursor() as cursor:
         cursor.execute('SELECT * FROM ad_data WHERE ad_id = %s', [ad_id])
         columns = [col[0] for col in cursor.description]
@@ -330,7 +345,9 @@ def ad_detail(request, ad_id):
         'title': f'Ad Detail: {ad_id}',
         'page_title': f'Объявление: {ad_id}',
         'ad': ad,
-        'daily_stats': daily_stats
+        'daily_stats': daily_stats,
+        'back_url': back_url,
+        'back_text': back_text
     })
 
 def update_kt_campaign_id(request, ad_id):
