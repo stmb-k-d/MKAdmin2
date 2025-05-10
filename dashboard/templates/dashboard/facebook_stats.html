@@ -1566,7 +1566,7 @@ $(document).ready(function() {
     buildColumnSelectionModal();
 
     // ------------------ Логика агрегации при скрытом date_log ------------------
-    const nameColumns = ['id_acc_bd','rk_id','camp_id','adset_id','ad_id','geo_buying','creo_id','app_id','type_optimization','fb_objective','time_zone','kt_campaign_name','kt_campaign_id','comment','rk_limit','creative_thumbnail_url','ad_name','adset_name','camp_name','rk_cur','rk_name'];
+    const nameColumns = ['id_acc_bd','rk_id','camp_id','adset_id','ad_id','geo_buying','creo_id','app_id','type_optimization','fb_objective','time_zone','kt_campaign_name','kt_campaign_id','comment','rk_limit','creative_thumbnail_url','ad_name','adset_name','camp_name','rk_cur','rk_name','install_or_dep'];
     const statusColumns = ['fb_effective_status','fb_status','install_or_dep','live_status','ad_effective_status','adset_status','adset_effective_status','camp_status','camp_effective_status'];
     const sumColumns = ['fb_impressions','fb_spend','fb_link_click','fb_video_view','fb_page_engagement','fb_post_engagement','fb_post_reaction','kt_unic_clicks','regs','deps','income','fb_clicks'];
     const calcColumns = ['fb_cpc','fb_cpm','fb_ctr','c2i','cr2i','cpi','i2r','cr2r','cpr','cr2d','r2s','cps','bprofit','broi'];
@@ -1600,22 +1600,29 @@ $(document).ready(function() {
     }
 
     function aggregateStats(data) {
-        // всегда стараемся группировать по ad_id, если он присутствует в данных
+        // Группируем по ВСЕМ «Название»-колонкам, которые видимы (selectedColumns)
+        const visibleNameCols = nameColumns.filter(col => selectedColumns.includes(col));
+
+        // Если ни одной видимой «Название»-колонки нет, используем приоритетный fallback
         const priority = ['ad_id','adset_id','camp_id','rk_id','id_acc_bd'];
-        let keyColumn = 'ad_id';
-        if (!(keyColumn in (data[0] || {}))) {
-            keyColumn = priority.find(col => selectedColumns.includes(col)) || priority.find(col => col in (data[0] || {}));
-        }
+
+        // Функция формирования ключа из строки колонок (составной ключ)
+        const buildKey = item => visibleNameCols.map(c => String(item[c] ?? '').trim()).join('||');
+        const usingCompositeKey = visibleNameCols.length > 0; // если хотя бы одна «Название»-колонка видима
+
+        // Если нет видимых «Название»-колонок, fallback-колонка (ad_id → ...)
+        let keyColumn = usingCompositeKey ? null : priority.find(col => col in (data[0] || {}));
 
         const map = new Map();
 
         data.forEach(item => {
-            const key = keyColumn ? String(item[keyColumn] || '').trim() : '___all';
+            // Строим ключ группировки
+            const key = usingCompositeKey ? buildKey(item) : (keyColumn ? String(item[keyColumn] ?? '').trim() : '___all');
             let agg = map.get(key);
             if (!agg) {
                 agg = {};
-                // копируем ключевую колонку и сразу нули для суммируемых
-                if (keyColumn) {
+                // Если одиночный ключ → сохраняем колонку, если составной — просто нули
+                if (!usingCompositeKey && keyColumn) {
                     agg[keyColumn] = item[keyColumn];
                 }
                 sumColumns.forEach(c => { agg[c] = 0; });
