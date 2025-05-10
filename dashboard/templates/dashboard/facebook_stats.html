@@ -319,6 +319,15 @@
                             <i class="fas fa-columns"></i> Настроить колонки
                         </button>
                     </div>
+                    <!-- Кнопка фильтров -->
+                    <div class="d-flex gap-2 me-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="showFiltersBtn" data-bs-toggle="modal" data-bs-target="#filtersModal">
+                            <i class="fas fa-filter"></i> Фильтры
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm d-none" id="resetFiltersBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <button id="refreshTable" class="btn btn-success btn-sm refresh-btn">
                         <i class="fas fa-sync-alt"></i> Обновить таблицу
                     </button>
@@ -425,6 +434,36 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="saveColumnSelection" data-bs-dismiss="modal">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для фильтров -->
+<div class="modal fade" id="filtersModal" tabindex="-1" aria-labelledby="filtersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filtersModalLabel">Настройка фильтров</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <small>Добавьте фильтры по нужным колонкам для уточнения выборки данных.</small>
+                </div>
+                <div class="mb-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="addFilterBtn">
+                        <i class="fas fa-plus"></i> Добавить фильтр
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="clearAllFiltersBtn">
+                        <i class="fas fa-trash"></i> Очистить все фильтры
+                    </button>
+                </div>
+                <div id="filtersContainer"><!-- динамически --></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="applyFiltersBtn" data-bs-dismiss="modal">Применить фильтры</button>
             </div>
         </div>
     </div>
@@ -701,7 +740,7 @@ $(document).ready(function() {
     console.log("Доступные колонки:", allColumns);
     
     // Изначально выбранные колонки по умолчанию
-    const initialDefaultColumns = allColumns.length > 15 ? allColumns.slice(0, 15) : allColumns;
+    const initialDefaultColumns = allColumns.filter(c => c !== 'date_log').slice(0, 15);
     
     // Получаем сохраненные пользовательские настройки колонок из localStorage
     let userColumnSettings = localStorage.getItem('fbStatsColumnSettings');
@@ -724,12 +763,97 @@ $(document).ready(function() {
         }
     }
     
+    // Глобально убираем date_log из выбранных колонок, чтобы не мешал агрегации
+    selectedColumns = selectedColumns.filter(col => col !== 'date_log');
+    
+    // ---------------- ФИЛЬТРЫ ------------------
+    let uniqueValues = {};
+    let activeFilters = {};
+
+    function initUniqueValues() {
+        uniqueValues = {};
+        allColumns.forEach(c => uniqueValues[c] = new Set());
+        statsData.forEach(row => {
+            allColumns.forEach(c => {
+                if (row[c] !== null && row[c] !== undefined) {
+                    uniqueValues[c].add(row[c]);
+                }
+            });
+        });
+        Object.keys(uniqueValues).forEach(c => uniqueValues[c] = Array.from(uniqueValues[c]).sort());
+    }
+    initUniqueValues();
+
+    function addFilter(column=null, values=null){
+        const filterItem = $('<div>').addClass('filter-item');
+        const closeBtn = $('<span>').addClass('close-btn').html('<i class="fas fa-times"></i>').on('click',function(){ $(this).parent().remove();});
+        const row = $('<div>').addClass('row');
+        const colSel = $('<div>').addClass('col-md-5 mb-2');
+        const colSelect = $('<select>').addClass('form-select form-select-sm filter-column-select').append($('<option>').val('').text('- колонка -'));
+        allColumns.forEach(col=> colSelect.append($('<option>').val(col).text(col).prop('selected',col===column)) );
+        colSel.append($('<label>').addClass('form-label').text('Колонка'), colSelect);
+        const valCol = $('<div>').addClass('col-md-7 mb-2');
+        const valContainer = $('<div>').addClass('filter-values-container');
+        valCol.append(valContainer);
+        row.append(colSel,valCol);
+        filterItem.append(closeBtn,row);
+        $('#filtersContainer').append(filterItem);
+
+        function renderValues(col){
+            valContainer.empty();
+            if(!col) { valContainer.append($('<p>').addClass('text-muted').text('Сначала выберите колонку')); return;}
+            const label=$('<label>').addClass('form-label').text('Значения');
+            const list=$('<div>').addClass('filter-value-list');
+            (uniqueValues[col]||[]).forEach(v=>{
+                const chk=$('<input>').addClass('form-check-input filter-value-checkbox').attr({type:'checkbox',value:v,id:`f-${col}-${v}`});
+                if(values&&values.includes(String(v))) chk.prop('checked',true);
+                const l=$('<label>').addClass('form-check-label').attr('for',`f-${col}-${v}`).text(v);
+                list.append($('<div>').addClass('form-check').append(chk,l));
+            });
+            valContainer.append(label,list);
+        }
+
+        if(column) renderValues(column,values);
+        colSelect.on('change',function(){ renderValues(this.value);});
+    }
+
+    $('#addFilterBtn').on('click',()=>addFilter());
+    $('#clearAllFiltersBtn').on('click',()=>$('#filtersContainer').empty());
+
+    $('#applyFiltersBtn').on('click',function(){
+        activeFilters={};
+        $('.filter-item').each(function(){
+            const col=$(this).find('.filter-column-select').val();
+            if(!col) return;
+            const vals=$(this).find('.filter-value-checkbox:checked').map((_,el)=>$(el).val()).get();
+            if(vals.length) activeFilters[col]=vals;
+        });
+        // индикатор
+        $('.active-filters-indicator').remove();
+        if(Object.keys(activeFilters).length){
+            $('#resetFiltersBtn').removeClass('d-none');
+            $('#showFiltersBtn').append($('<span>').addClass('active-filters-indicator').text(Object.keys(activeFilters).length));
+        }else{
+            $('#resetFiltersBtn').addClass('d-none');
+        }
+        buildTable();
+    });
+
+    $('#resetFiltersBtn').on('click',function(){ activeFilters={}; $(this).addClass('d-none'); $('.active-filters-indicator').remove(); buildTable(); });
+
+    $('#filtersModal').on('show.bs.modal',function(){ $('#filtersContainer').empty(); if(Object.keys(activeFilters).length){ for(const [c,v] of Object.entries(activeFilters)) addFilter(c,v); } else addFilter(); });
+
+    // --------- конец фильтров ----------
+
     // Глобальные переменные для хранения текущей сортировки
     let currentSortColumn = '';
     let currentSortDirection = '';
 
     // Функция для построения таблицы на основе выбранных колонок
-    function buildTable() {
+    function buildTable(skipRefresh = false) {
+        if (!skipRefresh) {
+            refreshDataSource(); // обновляем источник данных в зависимости от date_log
+        }
         console.log("Построение таблицы");
         const tableHeader = document.getElementById('tableHeader');
         const tableBody = document.getElementById('tableBody');
@@ -765,7 +889,7 @@ $(document).ready(function() {
         });
         
         // Создаем строки таблицы
-        statsData.forEach(item => {
+        currentTableData.forEach(item => {
             const tr = document.createElement('tr');
             tr.addEventListener('click', (event) => highlightRow(tr, event));
             
@@ -812,7 +936,12 @@ $(document).ready(function() {
                         td.textContent = value;
                     }
                 } else {
-                    td.textContent = value !== null ? value : '-';
+                    // Форматируем число: если есть дробная часть → 2 знака
+                    if (value !== null && value !== undefined && value !== '' && !isNaN(value) && /^-?\d*\.\d+$/.test(String(value))) {
+                        td.textContent = parseFloat(value).toFixed(2);
+                    } else {
+                        td.textContent = value !== null ? value : '-';
+                    }
                 }
                 
                 // Дополнительные стили в зависимости от типа данных и форматирование
@@ -877,7 +1006,8 @@ $(document).ready(function() {
         const searchValue = document.getElementById('searchInput').value;
         console.log("Поисковый запрос:", searchValue);
         
-        const isFiltered = activeOnly || searchValue.trim() !== '';
+        // Учитываем также наличие column-filters
+        const isFiltered = activeOnly || searchValue.trim() !== '' || Object.keys(activeFilters).length > 0;
         console.log("Применяется фильтрация:", isFiltered);
         
         // Вычисляем суммы
@@ -936,7 +1066,7 @@ $(document).ready(function() {
                 console.log("Видимых строк не найдено, используем программную фильтрацию");
                 
                 // Если видимых строк нет, используем программную фильтрацию
-                const filteredData = statsData.filter(item => {
+                const filteredData = currentTableData.filter(item => {
                     // Проверка фильтра "Активные"
                     if (activeOnly && (!item.fb_effective_status || item.fb_effective_status.toUpperCase() !== 'ACTIVE')) {
                         return false;
@@ -955,6 +1085,13 @@ $(document).ready(function() {
                         }
                         if (!matchesSearch) {
                             return false;
+                        }
+                    }
+                    
+                    // Проверка column-фильтров
+                    if(Object.keys(activeFilters).length){
+                        for(const [col,vals] of Object.entries(activeFilters)){
+                            if(!vals.includes(String(item[col]))) return false;
                         }
                     }
                     
@@ -988,7 +1125,7 @@ $(document).ready(function() {
             console.log("Фильтрация не применена, считаем по всем данным");
             
             // Если фильтры не используются, считаем по всем данным
-            statsData.forEach(item => {
+            currentTableData.forEach(item => {
                 sumFields.forEach(field => {
                     if (!totals[field]) totals[field] = 0;
                     // Удаляем символы форматирования и конвертируем в число
@@ -1006,6 +1143,9 @@ $(document).ready(function() {
             console.log("Итоговые значения без фильтрации:", totals);
         }
         
+        // Перед рендером рассчитываемDerived метрики по формулам
+        applyCalculated(totals);
+
         // Создаем итоговую строку
         const tableBody = document.getElementById('tableBody');
         const totalRow = document.createElement('tr');
@@ -1028,7 +1168,7 @@ $(document).ready(function() {
                 } else {
                     td.textContent = 'ИТОГО:';
                 }
-            } else if (sumFields.includes(column)) {
+            } else if (sumFields.includes(column) || calcColumns.includes(column)) {
                 // Форматируем числа в зависимости от типа данных
                 if (column.includes('spend') || column.includes('cpc') || column.includes('cpm')) {
                     td.textContent = totals[column] ? totals[column].toFixed(2) : '-';
@@ -1184,7 +1324,7 @@ $(document).ready(function() {
         currentSortDirection = sortDirection;
         
         // Сортируем данные
-        statsData.sort((a, b) => {
+        currentTableData.sort((a, b) => {
             let valA = a[column] || '';
             let valB = b[column] || '';
             
@@ -1207,8 +1347,8 @@ $(document).ready(function() {
             return 0;
         });
         
-        // Перестраиваем таблицу
-        buildTable();
+        // Перестраиваем таблицу без обновления источника, чтобы сортировка не сбрасывалась
+        buildTable(true);
     }
     
     // Функция для применения фильтра поиска
@@ -1260,8 +1400,17 @@ $(document).ready(function() {
                 }
             });
             
-            // Применяем фильтры: поиск и активный статус
-            const showRow = rowMatches && (!activeOnly || isActive);
+            // Проверяем соответствие активным column-фильтрам
+            let passesColumnFilters = true;
+            if(Object.keys(activeFilters).length){
+                passesColumnFilters = Object.entries(activeFilters).every(([col,vals])=>{
+                    const idx = selectedColumns.indexOf(col);
+                    if(idx===-1||idx>=cells.length) return false;
+                    return vals.includes(cells[idx].textContent.trim());
+                });
+            }
+
+            const showRow = rowMatches && (!activeOnly || isActive) && passesColumnFilters;
             console.log(`Строка ${isActive ? 'ACTIVE' : 'не ACTIVE'}, показывать: ${showRow}`);
             
             // Устанавливаем видимость строки
@@ -1413,11 +1562,121 @@ $(document).ready(function() {
         }
     }
     
-    // Инициализация
-    buildTable();
+    // Инициализация (строим модальное окно колонок без построения таблицы)
     buildColumnSelectionModal();
-    
-    // Применяем фильтр сразу при загрузке страницы
+
+    // ------------------ Логика агрегации при скрытом date_log ------------------
+    const nameColumns = ['id_acc_bd','rk_id','camp_id','adset_id','ad_id','geo_buying','creo_id','app_id','type_optimization','fb_objective','time_zone','kt_campaign_name','kt_campaign_id','comment','rk_limit','creative_thumbnail_url','ad_name','adset_name','camp_name','rk_cur','rk_name'];
+    const statusColumns = ['fb_effective_status','fb_status','install_or_dep','live_status','ad_effective_status','adset_status','adset_effective_status','camp_status','camp_effective_status'];
+    const sumColumns = ['fb_impressions','fb_spend','fb_link_click','fb_video_view','fb_page_engagement','fb_post_engagement','fb_post_reaction','kt_unic_clicks','regs','deps','income','fb_clicks'];
+    const calcColumns = ['fb_cpc','fb_cpm','fb_ctr','c2i','cr2i','cpi','i2r','cr2r','cpr','cr2d','r2s','cps','bprofit','broi'];
+    const updateColumns = ['last_update','last_update_fbt','last_update_kt'];
+    const skipColumns  = ['fb_quality_score_organic','fb_quality_score_ectr','fb_quality_score_ecvr','fb_cost_per_unique_click'];
+
+    function safeDiv(a, b) { return b !== 0 ? a / b : 0; }
+
+    function toNumber(v) {
+        if (v === null || v === undefined || v === '' || v === '-') return 0;
+        if (typeof v === 'number') return v;
+        const s = String(v).replace(/,/g, '.'); // десятичная запятая → точка
+        return parseFloat(s.replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    function applyCalculated(row) {
+        row.fb_cpc  = safeDiv(row.fb_spend, row.fb_clicks);
+        row.fb_cpm  = safeDiv(row.fb_spend, row.fb_impressions / 1000);
+        row.fb_ctr  = safeDiv(row.fb_clicks, row.fb_impressions) * 100;
+        row.c2i     = safeDiv(row.fb_clicks, row.kt_unic_clicks);
+        row.cr2i    = safeDiv(row.kt_unic_clicks, row.fb_clicks) * 100;
+        row.cpi     = safeDiv(row.fb_spend, row.kt_unic_clicks);
+        row.i2r     = safeDiv(row.kt_unic_clicks, row.regs);
+        row.cr2r    = safeDiv(row.regs, row.kt_unic_clicks) * 100;
+        row.cpr     = safeDiv(row.fb_spend, row.regs);
+        row.cr2d    = safeDiv(row.deps, row.regs) * 100;
+        row.r2s     = safeDiv(row.regs, row.deps);
+        row.cps     = safeDiv(row.fb_spend, row.deps);
+        row.bprofit = (row.income || 0) - (row.fb_spend || 0);
+        row.broi    = safeDiv(row.income, row.fb_spend) * 100;
+    }
+
+    function aggregateStats(data) {
+        // всегда стараемся группировать по ad_id, если он присутствует в данных
+        const priority = ['ad_id','adset_id','camp_id','rk_id','id_acc_bd'];
+        let keyColumn = 'ad_id';
+        if (!(keyColumn in (data[0] || {}))) {
+            keyColumn = priority.find(col => selectedColumns.includes(col)) || priority.find(col => col in (data[0] || {}));
+        }
+
+        const map = new Map();
+
+        data.forEach(item => {
+            const key = keyColumn ? String(item[keyColumn] || '').trim() : '___all';
+            let agg = map.get(key);
+            if (!agg) {
+                agg = {};
+                // копируем ключевую колонку и сразу нули для суммируемых
+                if (keyColumn) {
+                    agg[keyColumn] = item[keyColumn];
+                }
+                sumColumns.forEach(c => { agg[c] = 0; });
+                map.set(key, agg);
+            }
+
+            // гарантируем отображение всех «Название»-полей (берём первое попавшееся значение)
+            nameColumns.forEach(c => {
+                if (agg[c] === undefined || agg[c] === null || agg[c] === '-') {
+                    agg[c] = item[c];
+                }
+            });
+
+            // суммируем метрики
+            sumColumns.forEach(c => { agg[c] += toNumber(item[c]); });
+
+            // берём самые свежие статусы/апдейты
+            const curDate = new Date(agg.date_log || '1970-01-01');
+            const newDate = new Date(item.date_log);
+            if (newDate > curDate) {
+                statusColumns.concat(updateColumns).forEach(c => { agg[c] = item[c]; });
+                agg.date_log = item.date_log;
+            }
+        });
+
+        const result = Array.from(map.values()).map(row => {
+            applyCalculated(row);
+            skipColumns.forEach(c => { row[c] = '-'; });
+            return row;
+        });
+        return result;
+    }
+
+    let currentTableData = statsData;
+
+    function refreshDataSource() {
+        console.log('--- refreshDataSource ---');
+        console.log('selectedColumns содержит date_log?', selectedColumns.includes('date_log'));
+        console.log('selectedColumns:', selectedColumns);
+        console.log('statsData length:', statsData.length);
+        if (selectedColumns.includes('date_log')) {
+            currentTableData = statsData;
+        } else {
+            currentTableData = aggregateStats(statsData);
+        }
+        console.log('currentTableData length после refresh:', currentTableData.length);
+    }
+
+    // Временная отладочная функция: проверяем сумму fb_spend по ad_id и сравниваем с агрегированной
+    function verifyAggregationForAd(targetAdId) {
+        const origSum = statsData.filter(r => String(r.ad_id) === String(targetAdId)).reduce((acc, r) => acc + toNumber(r.fb_spend), 0);
+        const aggRow = aggregateStats(statsData).find(r => String(r.ad_id) === String(targetAdId));
+        const aggSum = aggRow ? toNumber(aggRow.fb_spend) : 0;
+        console.log(`Проверка агрегации для ad_id=${targetAdId}: исходная сумма=${origSum.toFixed(2)}, после aggregateStats=${aggSum.toFixed(2)}`);
+    }
+
+    // Немедленная проверка после загрузки скрипта
+    verifyAggregationForAd('120224350299670191');
+
+    // Теперь, когда классификация колонок объявлена, строим таблицу и применяем фильтр поиска
+    buildTable();
     applySearchFilter(searchInput.value);
 });
 </script>

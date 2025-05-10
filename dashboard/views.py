@@ -579,7 +579,8 @@ def facebook_stats_view(request):
             if where_conditions:
                 sql += " WHERE " + " AND ".join(where_conditions)
             
-            sql += " ORDER BY date_log DESC LIMIT 1000"
+            # Забираем полный набор строк за выбранный диапазон (ограничение не нужно, иначе теряем данные)
+            sql += " ORDER BY date_log DESC"
             
             # Выполняем запрос
             cursor.execute(sql, params)
