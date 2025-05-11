@@ -420,6 +420,11 @@
                 box-shadow: none;
             }
         }
+
+        /* Правило для пунктов с прямой ссылкой */
+        .dropdown-toggle:not([data-bs-toggle]) {
+            cursor: pointer;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -437,9 +442,16 @@
                     {% for item in menu_items %}
                         {% if item.submenu %}
                             <li class="nav-item dropdown">
+                                {% if item.direct_link %}
+                                <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == item.name %}active{% endif %}" 
+                                   href="{% url 'dashboard:'|add:item.name %}" id="navbarDropdown{{ item.name }}" role="button" aria-expanded="false">
+                                    <i class="{{ item.icon }} matrix-icon"></i><span>{{ item.title }}</span>
+                                </a>
+                                {% else %}
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown{{ item.name }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="{{ item.icon }} matrix-icon"></i><span>{{ item.title }}</span>
                                 </a>
+                                {% endif %}
                                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown{{ item.name }}">
                                     {% for submenu_item in item.submenu %}
                                         <li>
@@ -490,6 +502,7 @@
                 
                 document.querySelectorAll('.navbar-nav .dropdown').forEach(function(dropdown) {
                     const dropdownMenu = dropdown.querySelector('.dropdown-menu');
+                    const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
                     
                     // Обработчик для родительского пункта меню
                     dropdown.addEventListener('mouseenter', function() {
@@ -506,6 +519,14 @@
                             dropdownMenu.classList.add('show');
                         }
                     });
+                    
+                    // Предотвращаем закрытие выпадающего меню при клике на элементы с direct_link
+                    if (dropdownToggle && !dropdownToggle.hasAttribute('data-bs-toggle')) {
+                        dropdownToggle.addEventListener('click', function(e) {
+                            // Не предотвращаем действие по умолчанию, чтобы переход по ссылке работал
+                            e.stopPropagation(); // Останавливаем всплытие, чтобы Bootstrap не закрыл меню
+                        });
+                    }
                     
                     // Обработчик для самого выпадающего меню
                     if (dropdownMenu) {

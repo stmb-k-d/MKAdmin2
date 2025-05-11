@@ -30,9 +30,13 @@ def get_menu_items():
             ]
         },
         {'name': 'statistic', 'title': 'Статистика', 'icon': 'fas fa-chart-bar'},
-        {'name': 'analytics', 'title': 'Аналитика', 'icon': 'fas fa-chart-pie'},
-        {'name': 'offers', 'title': 'Офферы', 'icon': 'fas fa-tags'},
-        {'name': 'bundles', 'title': 'Связки', 'icon': 'fas fa-link'},
+        {'name': 'analytics', 'title': 'Аналитика', 'icon': 'fas fa-chart-pie',
+         'direct_link': True,
+         'submenu': [
+             {'name': 'offers', 'title': 'Офферы', 'icon': 'fas fa-tags'},
+             {'name': 'bundles', 'title': 'Связки', 'icon': 'fas fa-link'},
+         ]
+        },
         {'name': 'tasks', 'title': 'Задачи', 'icon': 'fas fa-tasks'},
         {'name': 'finance', 'title': 'Финансы', 'icon': 'fas fa-money-bill-wave'},
         {'name': 'services', 'title': 'Сервисы', 'icon': 'fas fa-cogs'},
