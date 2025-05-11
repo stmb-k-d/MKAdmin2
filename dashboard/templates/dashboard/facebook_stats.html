@@ -277,6 +277,11 @@
         color: #28a745;
         font-weight: bold;
     }
+    /* Стили для переключателя "Убрать без расхода" */
+    .zero-spend-filter-enabled {
+        color: #28a745;
+        font-weight: bold;
+    }
 </style>
 <!-- CSS для выбора диапазона дат -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
@@ -313,6 +318,11 @@
                     <div class="form-check form-switch me-3">
                         <input class="form-check-input" type="checkbox" id="activeOnlyFilter">
                         <label class="form-check-label" for="activeOnlyFilter">Активные</label>
+                    </div>
+                    <!-- Новый переключатель "Убрать без расхода" -->
+                    <div class="form-check form-switch me-3">
+                        <input class="form-check-input" type="checkbox" id="zeroSpendFilter">
+                        <label class="form-check-label" for="zeroSpendFilter">Убрать без расхода</label>
                     </div>
                     <div class="column-buttons me-3">
                         <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
@@ -513,6 +523,7 @@ $(document).ready(function() {
     const resetDateFilter = document.getElementById('resetDateFilter');
     const refreshTableBtn = document.getElementById('refreshTable');
     const activeOnlyFilter = document.getElementById('activeOnlyFilter');
+    const zeroSpendFilter = document.getElementById('zeroSpendFilter');
     const searchInput = document.getElementById('searchInput');
     
     /* === Daterangepicker и логика скрытых полей === */
@@ -587,6 +598,18 @@ $(document).ready(function() {
         }
     } catch (e) {
         console.error('Ошибка при восстановлении состояния переключателя "Активные":', e);
+    }
+    
+    // Восстанавливаем состояние переключателя "Убрать без расхода" из localStorage
+    try {
+        const hideZeroState = localStorage.getItem('fbStatsHideZeroSpend');
+        if (hideZeroState === 'true') {
+            zeroSpendFilter.checked = true;
+            const labelZero = document.querySelector('label[for="zeroSpendFilter"]');
+            labelZero.classList.add('zero-spend-filter-enabled');
+        }
+    } catch (e) {
+        console.error('Ошибка при восстановлении состояния переключателя "Убрать без расхода":', e);
     }
     
     // Установка начальных значений дат (последний месяц)
@@ -1613,7 +1636,9 @@ $(document).ready(function() {
         
         const searchTermLower = searchTerm.toLowerCase();
         const activeOnly = document.getElementById('activeOnlyFilter').checked;
+        const hideZeroSpend = document.getElementById('zeroSpendFilter').checked;
         console.log("Фильтр 'Активные' включен:", activeOnly);
+        console.log("Фильтр 'Убрать без расхода' включен:", hideZeroSpend);
         
         let visibleRowCount = 0;
         
@@ -1628,6 +1653,7 @@ $(document).ready(function() {
             const cells = row.querySelectorAll('td');
             let rowMatches = false;
             let isActive = false;
+            let spendPositive = true;
             
             // Проверяем соответствие поисковому запросу
             if (searchTerm === '') {
@@ -1663,7 +1689,17 @@ $(document).ready(function() {
                 });
             }
 
-            const showRow = rowMatches && (!activeOnly || isActive) && passesColumnFilters;
+            // Проверяем spend > 0 при включённом фильтре "Убрать без расхода" и наличии ad_id
+            if (hideZeroSpend && selectedColumns.includes('ad_id')) {
+                const spendIdx = selectedColumns.indexOf('fb_spend');
+                if (spendIdx !== -1 && spendIdx < cells.length) {
+                    const spendRaw = cells[spendIdx].textContent.replace(/[^\d.-]/g, '');
+                    const spendVal = parseFloat(spendRaw || 0);
+                    spendPositive = spendVal > 0;
+                }
+            }
+
+            const showRow = rowMatches && (!activeOnly || isActive) && spendPositive && passesColumnFilters;
             console.log(`Строка ${isActive ? 'ACTIVE' : 'не ACTIVE'}, показывать: ${showRow}`);
             
             // Устанавливаем видимость строки
@@ -1688,6 +1724,10 @@ $(document).ready(function() {
                 
                 if (activeOnly) {
                     message.innerHTML += ' Попробуйте отключить фильтр "Активные".';
+                }
+                
+                if (hideZeroSpend) {
+                    message.innerHTML += ' Попробуйте отключить фильтр "Убрать без расхода".';
                 }
                 
                 tableContainer.appendChild(message);
@@ -1726,6 +1766,25 @@ $(document).ready(function() {
         
         // Применяем фильтр заново
         console.log("Изменено состояние фильтра 'Активные', применяем фильтр");
+        applySearchFilter(searchInput.value);
+    });
+    
+    // Обработчик для переключателя "Убрать без расхода"
+    zeroSpendFilter.addEventListener('change', function() {
+        try {
+            localStorage.setItem('fbStatsHideZeroSpend', this.checked);
+        } catch (e) {
+            console.error('Ошибка при сохранении состояния переключателя "Убрать без расхода":', e);
+        }
+
+        const label = document.querySelector('label[for="zeroSpendFilter"]');
+        if (this.checked) {
+            label.classList.add('zero-spend-filter-enabled');
+        } else {
+            label.classList.remove('zero-spend-filter-enabled');
+        }
+
+        // Применяем фильтр заново
         applySearchFilter(searchInput.value);
     });
     
