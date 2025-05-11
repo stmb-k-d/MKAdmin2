@@ -331,6 +331,9 @@
                     <button id="refreshTable" class="btn btn-success btn-sm refresh-btn">
                         <i class="fas fa-sync-alt"></i> Обновить таблицу
                     </button>
+                    <button id="downloadCsvBtn" class="btn btn-outline-secondary btn-sm ms-2">
+                        <i class="fas fa-download"></i> Скачать CSV
+                    </button>
                 </div>
                 <div>
                     <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
@@ -1174,7 +1177,7 @@ $(document).ready(function() {
                     td.textContent = totals[column] ? totals[column].toFixed(2) : '-';
                     td.classList.add('numeric-cell');
                 } else if (column.includes('ctr') || column.includes('cr')) {
-                    td.textContent = totals[column] ? (totals[column] * 100).toFixed(2) + '%' : '-';
+                    td.textContent = totals[column] ? totals[column].toFixed(2) + '%' : '-';
                     td.classList.add('percent-cell');
                 } else if (column === 'cpi' || column === 'cpr') {
                     td.textContent = totals[column] ? totals[column].toFixed(2) : '-';
@@ -1602,13 +1605,19 @@ $(document).ready(function() {
     function aggregateStats(data) {
         // Группируем по ВСЕМ «Название»-колонкам, которые видимы (selectedColumns)
         const visibleNameCols = nameColumns.filter(col => selectedColumns.includes(col));
+        const includeDate = selectedColumns.includes('date_log');
 
         // Если ни одной видимой «Название»-колонки нет, используем приоритетный fallback
         const priority = ['ad_id','adset_id','camp_id','rk_id','id_acc_bd'];
 
         // Функция формирования ключа из строки колонок (составной ключ)
-        const buildKey = item => visibleNameCols.map(c => String(item[c] ?? '').trim()).join('||');
-        const usingCompositeKey = visibleNameCols.length > 0; // если хотя бы одна «Название»-колонка видима
+        const buildKey = item => {
+            const parts = [];
+            if(includeDate) parts.push(String(item.date_log ?? '').trim());
+            visibleNameCols.forEach(c=>parts.push(String(item[c] ?? '').trim()));
+            return parts.join('||');
+        };
+        const usingCompositeKey = includeDate || visibleNameCols.length > 0; // если хотя бы одна «Название»-колонка видима
 
         // Если нет видимых «Название»-колонок, fallback-колонка (ad_id → ...)
         let keyColumn = usingCompositeKey ? null : priority.find(col => col in (data[0] || {}));
@@ -1621,6 +1630,8 @@ $(document).ready(function() {
             let agg = map.get(key);
             if (!agg) {
                 agg = {};
+                // Сохраняем ключевые поля чтобы не потерять в агрегате
+                if(includeDate) agg.date_log = item.date_log;
                 // Если одиночный ключ → сохраняем колонку, если составной — просто нули
                 if (!usingCompositeKey && keyColumn) {
                     agg[keyColumn] = item[keyColumn];
@@ -1663,11 +1674,7 @@ $(document).ready(function() {
         console.log('selectedColumns содержит date_log?', selectedColumns.includes('date_log'));
         console.log('selectedColumns:', selectedColumns);
         console.log('statsData length:', statsData.length);
-        if (selectedColumns.includes('date_log')) {
-            currentTableData = statsData;
-        } else {
-            currentTableData = aggregateStats(statsData);
-        }
+        currentTableData = aggregateStats(statsData);
         console.log('currentTableData length после refresh:', currentTableData.length);
     }
 
@@ -1685,6 +1692,52 @@ $(document).ready(function() {
     // Теперь, когда классификация колонок объявлена, строим таблицу и применяем фильтр поиска
     buildTable();
     applySearchFilter(searchInput.value);
+
+    // ---------- Генерация CSV ----------
+    function generateCsv() {
+        const header = selectedColumns.slice();
+        const rows = [];
+
+        // видимые строки (исключаем скрытые и итоговую)
+        const visibleRows = Array.from(document.querySelectorAll('#statsTable tbody tr:not(.total-row)'))
+            .filter(r => window.getComputedStyle(r).display !== 'none');
+
+        visibleRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const rowData = [];
+            header.forEach((_, idx) => {
+                const cellText = cells[idx] ? cells[idx].textContent.trim() : '';
+                // экранируем запятые/кавычки
+                const cleaned = '"' + cellText.replace(/"/g,'""') + '"';
+                rowData.push(cleaned);
+            });
+            rows.push(rowData.join(','));
+        });
+
+        // Добавим итоговую строку, если есть
+        const totalRow = document.querySelector('#statsTable tbody tr.total-row');
+        if (totalRow) {
+            const cells = totalRow.querySelectorAll('td');
+            const totalData = header.map((_, idx) => {
+                const cellText = cells[idx] ? cells[idx].textContent.trim() : '';
+                return '"' + cellText.replace(/"/g,'""') + '"';
+            });
+            rows.push(totalData.join(','));
+        }
+
+        const csvString = '"' + header.join('","') + '"\n' + rows.join('\n');
+        const blob = new Blob([csvString], {type: 'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'facebook_stats.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('downloadCsvBtn').addEventListener('click', generateCsv);
 });
 </script>
 {% endblock %} 
