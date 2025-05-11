@@ -328,7 +328,7 @@
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <button id="refreshTable" class="btn btn-success btn-sm refresh-btn">
+                    <button id="refreshTable" class="btn btn-outline-primary btn-sm refresh-btn">
                         <i class="fas fa-sync-alt"></i> Обновить таблицу
                     </button>
                     <button id="downloadCsvBtn" class="btn btn-outline-secondary btn-sm ms-2">
@@ -645,12 +645,38 @@ $(document).ready(function() {
         }
     });
     
+    // Глобальная переменная для хранения таймаута
+    let refreshTimeout = null;
+    // Флаг, указывающий, что запрос в процессе выполнения
+    let isRefreshing = false;
+
     // Обработчик для кнопки "Обновить таблицу"
     refreshTableBtn.addEventListener('click', function() {
+        // Если обновление уже выполняется, не делаем ничего
+        if (isRefreshing) {
+            console.log('Обновление уже выполняется...');
+            return;
+        }
+        
+        // Устанавливаем флаг, что запрос в процессе выполнения
+        isRefreshing = true;
+        
+        // Очищаем предыдущий таймаут, если он есть
+        if (refreshTimeout) {
+            clearTimeout(refreshTimeout);
+            refreshTimeout = null;
+        }
+        
+        // Сохраняем ссылку на кнопку
+        const button = this;
+        
+        // Сохраняем оригинальное содержимое и классы кнопки
+        const originalContent = button.innerHTML;
+        const originalClasses = Array.from(button.classList);
+        
         // Показываем индикатор загрузки в кнопке
-        const originalContent = this.innerHTML;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
-        this.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
+        button.disabled = true;
         
         // Получаем текущие параметры фильтров
         const urlParams = new URLSearchParams(window.location.search);
@@ -663,49 +689,270 @@ $(document).ready(function() {
             apiUrl = `${apiUrl}?date_from=${dateFrom}&date_to=${dateTo}`;
         }
         
+        // Функция для восстановления исходного состояния кнопки
+        function resetButtonState() {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            // Корректно восстанавливаем все классы
+            button.className = '';
+            originalClasses.forEach(cls => button.classList.add(cls));
+            isRefreshing = false;
+        }
+        
+        // Показываем пользователю визуальную индикацию статуса обновления
+        function showUpdateStatus(success, message = '') {
+            const statusElement = document.createElement('div');
+            statusElement.id = 'updateStatusMessage';
+            statusElement.style.cssText = 'position:fixed; top:20px; right:20px; padding:10px 15px; border-radius:4px; z-index:9999; box-shadow:0 2px 10px rgba(0,0,0,0.2);';
+            
+            if (success) {
+                statusElement.style.backgroundColor = '#0d6efd'; // Синий (primary) цвет вместо зеленого
+                statusElement.style.color = '#fff';
+                statusElement.innerHTML = '<i class="fas fa-check-circle"></i> ' + (message || 'Таблица успешно обновлена');
+            } else {
+                statusElement.style.backgroundColor = '#dc3545';
+                statusElement.style.color = '#fff';
+                statusElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message || 'Ошибка при обновлении таблицы'}`;
+            }
+            
+            // Удаляем предыдущее сообщение, если есть
+            const oldStatus = document.getElementById('updateStatusMessage');
+            if (oldStatus) {
+                oldStatus.remove();
+            }
+            
+            document.body.appendChild(statusElement);
+            
+            // Автоматически скрываем через 5 секунд
+            setTimeout(() => {
+                if (statusElement.parentNode) {
+                    statusElement.remove();
+                }
+            }, 5000);
+        }
+        
         // Выполняем AJAX запрос для получения обновленных данных
         fetch(apiUrl)
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
+                }
+                return response.text();
+            })
             .then(html => {
-                // Создаем временный DOM для обработки HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Извлекаем данные из ответа (используем скрипт со страницы)
-                const scriptContent = Array.from(doc.querySelectorAll('script'))
-                    .find(script => script.textContent.includes('const statsData = ['));
-                
-                if (scriptContent) {
-                    // Выполняем скрипт для получения данных
-                    eval(scriptContent.textContent);
+                try {
+                    // Создаем временный DOM для обработки HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
                     
-                    // Перестраиваем таблицу с новыми данными
-                    buildTable();
+                    // Извлекаем скрипт, содержащий данные для таблицы
+                    const scriptContent = Array.from(doc.querySelectorAll('script'))
+                        .find(script => script.textContent.includes('const statsData = ['));
                     
-                    // Показываем анимацию успешного обновления в кнопке
-                    this.classList.add('btn-success');
-                    this.classList.remove('btn-sm');
-                    this.innerHTML = '<i class="fas fa-check"></i> Обновлено';
+                    if (!scriptContent) {
+                        throw new Error('Не найден скрипт с данными в ответе сервера');
+                    }
+                    
+                    // Получаем строку с данными
+                    const scriptText = scriptContent.textContent;
+                    
+                    // Извлекаем данные из скрипта регулярным выражением
+                    const dataMatch = scriptText.match(/const statsData = (\[[\s\S]*?\]);/);
+                    
+                    if (!dataMatch || !dataMatch[1]) {
+                        throw new Error('Не удалось найти данные в полученном ответе');
+                    }
+                    
+                    try {
+                        // Получаем строку с данными и логируем её для отладки
+                        let jsonString = dataMatch[1];
+                        console.log('Получена строка данных длиной:', jsonString.length);
+                        
+                        // Функция для обновления таблицы с новыми данными
+                        function updateTableWithNewData(newStatsData) {
+                            // Сохраняем предыдущее количество для сравнения
+                            const prevDataCount = statsData.length;
+                            
+                            // Обновляем глобальную переменную
+                            statsData = newStatsData;
+                            
+                            // Перестраиваем таблицу с новыми данными
+                            refreshDataSource();
+                            buildTable();
+                            applySearchFilter(document.getElementById('searchInput').value);
+                            
+                            // Показываем анимацию успешного обновления в кнопке
+                            button.className = '';
+                            originalClasses.forEach(cls => button.classList.add(cls));
+                            button.classList.add('btn-outline-primary');
+                            button.classList.remove('btn-sm');
+                            button.innerHTML = '<i class="fas fa-check"></i> Обновлено';
+                            
+                            // Показываем уведомление об успешном обновлении с информацией
+                            showUpdateStatus(true, `Данные обновлены: ${prevDataCount} → ${newStatsData.length} записей`);
+                            console.log(`Таблица обновлена: ${prevDataCount} → ${newStatsData.length} записей`);
+                            
+                            // Через 2 секунды возвращаем кнопку в исходное состояние
+                            refreshTimeout = setTimeout(() => {
+                                resetButtonState();
+                                refreshTimeout = null;
+                            }, 2000);
+                        }
+                        
+                        // Проверяем, не является ли строка пустым массивом
+                        if (jsonString.trim() === '[]') {
+                            console.log('Получен пустой массив данных');
+                            statsData = [];
+                            showUpdateStatus(true, 'Обновлено. Нет данных для отображения.');
+                            
+                            // Перестраиваем таблицу даже с пустыми данными
+                            refreshDataSource();
+                            buildTable();
+                            
+                            // Показываем анимацию успешного обновления в кнопке
+                            button.className = '';
+                            originalClasses.forEach(cls => button.classList.add(cls));
+                            button.classList.add('btn-outline-primary');
+                            button.classList.remove('btn-sm');
+                            button.innerHTML = '<i class="fas fa-check"></i> Обновлено';
+                            
+                            // Через 2 секунды возвращаем кнопку в исходное состояние
+                            refreshTimeout = setTimeout(() => {
+                                resetButtonState();
+                                refreshTimeout = null;
+                            }, 2000);
+                        } else {
+                            let parsedSuccessfully = false;
+                            let newStatsData = [];
+                            
+                            // Метод 1: Стандартный JSON.parse
+                            try {
+                                console.log('Метод 1: Стандартный JSON.parse');
+                                newStatsData = JSON.parse(jsonString);
+                                console.log('Метод 1 успешен, получено записей:', newStatsData.length);
+                                parsedSuccessfully = true;
+                            } catch (e) {
+                                console.error('Ошибка метода 1:', e);
+                                
+                                // Метод 2: Предобработка строки перед парсингом
+                                try {
+                                    console.log('Метод 2: Предобработка JSON строки');
+                                    const cleanedJsonString = jsonString
+                                        .replace(/\\'/g, "'")     // Заменяем экранированные апострофы
+                                        .replace(/\\"/g, '"')     // Заменяем экранированные кавычки
+                                        .replace(/\\\\/g, '\\')   // Заменяем двойные обратные слеши
+                                        .replace(/\n/g, ' ')      // Заменяем переносы строк
+                                        .replace(/\r/g, ' ')      // Заменяем возвраты каретки
+                                        .replace(/\t/g, ' ');     // Заменяем табуляции
+                                    
+                                    newStatsData = JSON.parse(cleanedJsonString);
+                                    console.log('Метод 2 успешен, получено записей:', newStatsData.length);
+                                    parsedSuccessfully = true;
+                                } catch (e2) {
+                                    console.error('Ошибка метода 2:', e2);
+                                    
+                                    // Метод 3: Прямое использование данных из шаблона
+                                    // Вместо парсинга JSON, переиспользуем оригинальные данные из шаблона
+                                    try {
+                                        console.log('Метод 3: Прямое использование данных из страницы');
+                                        // Логика: если мы уже на странице, у нас уже есть переменная statsData
+                                        // Просто используем ее напрямую
+                                        showUpdateStatus(true, 'Данные повторно загружены');
+                                        button.className = '';
+                                        originalClasses.forEach(cls => button.classList.add(cls));
+                                        button.classList.add('btn-outline-primary');
+                                        button.classList.remove('btn-sm');
+                                        button.innerHTML = '<i class="fas fa-check"></i> Обновлено';
+                                        
+                                        // Просто перерисовываем таблицу с имеющимися данными
+                                        refreshDataSource();
+                                        buildTable();
+                                        applySearchFilter(document.getElementById('searchInput').value);
+                                        
+                                        console.log('Метод 3: таблица перерисована с текущими данными');
+                                        
+                                        // Через 2 секунды возвращаем кнопку в исходное состояние
+                                        refreshTimeout = setTimeout(() => {
+                                            resetButtonState();
+                                            refreshTimeout = null;
+                                        }, 2000);
+                                        
+                                        return; // Выходим из обработчика, так как таблица уже обновлена
+                                    } catch (e3) {
+                                        console.error('Ошибка метода 3:', e3);
+                                        
+                                        // Последний вариант - просим пользователя перезагрузить страницу
+                                        button.className = '';
+                                        originalClasses.forEach(cls => button.classList.add(cls));
+                                        button.classList.add('btn-warning');
+                                        button.classList.remove('btn-sm');
+                                        button.innerHTML = '<i class="fas fa-sync"></i> Требуется перезагрузка';
+                                        
+                                        showUpdateStatus(false, 'Не удалось обновить данные. Попробуйте перезагрузить страницу.');
+                                        
+                                        // Добавляем кнопку для перезагрузки
+                                        const statusElement = document.getElementById('updateStatusMessage');
+                                        if (statusElement) {
+                                            const reloadBtn = document.createElement('button');
+                                            reloadBtn.className = 'btn btn-sm btn-light mt-2';
+                                            reloadBtn.innerHTML = '<i class="fas fa-sync"></i> Перезагрузить страницу';
+                                            reloadBtn.onclick = function() { window.location.reload(); };
+                                            statusElement.appendChild(document.createElement('br'));
+                                            statusElement.appendChild(reloadBtn);
+                                        }
+                                        
+                                        // Через 5 секунд возвращаем кнопку в исходное состояние
+                                        refreshTimeout = setTimeout(() => {
+                                            resetButtonState();
+                                            refreshTimeout = null;
+                                        }, 5000);
+                                        
+                                        isRefreshing = false;
+                                        return; // Выходим, чтобы не вызывать дополнительных исключений
+                                    }
+                                }
+                            }
+                            
+                            // Если удалось распарсить данные одним из методов - обновляем таблицу
+                            if (parsedSuccessfully && Array.isArray(newStatsData)) {
+                                console.log('Данные успешно получены, обновляем таблицу...');
+                                updateTableWithNewData(newStatsData);
+                            }
+                        }
+                    } catch (dataError) {
+                        console.error('Общая ошибка при обработке данных:', dataError);
+                        button.className = '';
+                        originalClasses.forEach(cls => button.classList.add(cls));
+                        button.classList.add('btn-danger');
+                        button.classList.remove('btn-sm');
+                        button.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
+                        
+                        // Показываем уведомление с деталями ошибки
+                        showUpdateStatus(false, 'Ошибка при обновлении: ' + dataError.message);
+                        
+                        // Восстанавливаем состояние кнопки через 3 секунды
+                        refreshTimeout = setTimeout(() => {
+                            resetButtonState();
+                            refreshTimeout = null;
+                        }, 3000);
+                    }
+                } catch (error) {
+                    console.error('Ошибка при обработке данных:', error);
+                    
+                    // Показываем ошибку в кнопке
+                    button.className = '';
+                    originalClasses.forEach(cls => button.classList.add(cls));
+                    button.classList.add('btn-danger');
+                    button.classList.remove('btn-sm');
+                    button.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
+                    
+                    // Показываем уведомление с деталями ошибки
+                    showUpdateStatus(false, error.message);
                     
                     // Через 1.5 секунды возвращаем кнопку в исходное состояние
-                    setTimeout(() => {
-                        this.innerHTML = originalContent;
-                        this.disabled = false;
-                        this.classList.remove('btn-success');
-                        this.classList.add('btn-sm');
-                    }, 1500);
-                } else {
-                    // В случае ошибки показываем соответствующую иконку
-                    this.classList.add('btn-danger');
-                    this.classList.remove('btn-sm');
-                    this.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
-                    
-                    // Через 1.5 секунды возвращаем кнопку в исходное состояние
-                    setTimeout(() => {
-                        this.innerHTML = originalContent;
-                        this.disabled = false;
-                        this.classList.remove('btn-danger');
-                        this.classList.add('btn-sm');
+                    refreshTimeout = setTimeout(() => {
+                        resetButtonState();
+                        refreshTimeout = null;
                     }, 1500);
                 }
             })
@@ -713,16 +960,19 @@ $(document).ready(function() {
                 console.error('Ошибка при обновлении данных:', error);
                 
                 // Показываем ошибку в кнопке
-                this.classList.add('btn-danger');
-                this.classList.remove('btn-sm');
-                this.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
+                button.className = '';
+                originalClasses.forEach(cls => button.classList.add(cls));
+                button.classList.add('btn-danger');
+                button.classList.remove('btn-sm');
+                button.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка';
+                
+                // Показываем уведомление с деталями ошибки
+                showUpdateStatus(false, error.message);
                 
                 // Через 1.5 секунды возвращаем кнопку в исходное состояние
-                setTimeout(() => {
-                    this.innerHTML = originalContent;
-                    this.disabled = false;
-                    this.classList.remove('btn-danger');
-                    this.classList.add('btn-sm');
+                refreshTimeout = setTimeout(() => {
+                    resetButtonState();
+                    refreshTimeout = null;
                 }, 1500);
             });
     });

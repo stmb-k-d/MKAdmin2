@@ -31,6 +31,7 @@ def get_menu_items():
         },
         {'name': 'statistic', 'title': 'Статистика', 'icon': 'fas fa-chart-bar'},
         {'name': 'analytics', 'title': 'Аналитика', 'icon': 'fas fa-chart-pie'},
+        {'name': 'offers', 'title': 'Офферы', 'icon': 'fas fa-tags'},
         {'name': 'bundles', 'title': 'Связки', 'icon': 'fas fa-link'},
         {'name': 'tasks', 'title': 'Задачи', 'icon': 'fas fa-tasks'},
         {'name': 'finance', 'title': 'Финансы', 'icon': 'fas fa-money-bill-wave'},
@@ -803,3 +804,41 @@ def get_facebook_stats_chart_data(request):
             
     except Exception as e:
         return JsonResponse({'error': f'Ошибка при получении данных для графика: {str(e)}'})
+
+def offers_view(request):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT * FROM offers_rates')
+        columns = [col[0] for col in cursor.description]
+        offers = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    
+    return render(request, 'dashboard/offers.html', {
+        'menu_items': get_menu_items(),
+        'title': 'Офферы',
+        'page_title': 'Управление офферами',
+        'offers': offers
+    })
+
+def edit_offer(request, offer_id):
+    if request.method == 'POST':
+        offer_id_kt = request.POST.get('offer_id_kt')
+        offer_name_kt = request.POST.get('offer_name_kt')
+        geo = request.POST.get('geo')
+        rate_usd = request.POST.get('rate_usd')
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'UPDATE offers_rates SET offer_name_kt = %s, geo = %s, rate_usd = %s WHERE offer_id_kt = %s',
+                [offer_name_kt, geo, rate_usd, offer_id_kt]
+            )
+        
+        return redirect('dashboard:offers')
+    
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT * FROM offers_rates WHERE offer_id_kt = %s', [offer_id])
+        columns = [col[0] for col in cursor.description]
+        row = cursor.fetchone()
+        if row is None:
+            return JsonResponse({'error': 'Оффер не найден'}, status=404)
+        offer_data = dict(zip(columns, row))
+    
+    return JsonResponse(offer_data)

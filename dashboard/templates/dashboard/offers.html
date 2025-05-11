@@ -1,0 +1,129 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Список офферов</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID оффера</th>
+                        <th>Название оффера</th>
+                        <th>Гео</th>
+                        <th>Ставка (USD)</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in offers %}
+                    <tr>
+                        <td>{{ offer.offer_id_kt }}</td>
+                        <td>{{ offer.offer_name_kt }}</td>
+                        <td><span class="badge bg-primary">{{ offer.geo }}</span></td>
+                        <td>${{ offer.rate_usd }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-offer-btn" 
+                                    data-offer-id="{{ offer.offer_id_kt }}">
+                                <i class="fas fa-edit"></i> Редактировать
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">Офферы не найдены</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования оффера -->
+<div class="modal fade" id="editOfferModal" tabindex="-1" aria-labelledby="editOfferModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editOfferModalLabel">Редактирование оффера</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editOfferForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="offer_id_kt" name="offer_id_kt">
+                    
+                    <div class="mb-3">
+                        <label for="offer_name_kt" class="form-label">Название оффера</label>
+                        <input type="text" class="form-control" id="offer_name_kt" name="offer_name_kt" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="geo" class="form-label">Гео</label>
+                        <input type="text" class="form-control" id="geo" name="geo" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="rate_usd" class="form-label">Ставка (USD)</label>
+                        <input type="number" step="0.01" class="form-control" id="rate_usd" name="rate_usd" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Обработчики для кнопок редактирования
+        const editButtons = document.querySelectorAll('.edit-offer-btn');
+        const editModal = new bootstrap.Modal(document.getElementById('editOfferModal'));
+        
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const offerId = this.getAttribute('data-offer-id');
+                
+                // Загружаем данные оффера через AJAX
+                fetch(`/offers/edit/${offerId}/`)
+                    .then(response => {
+                        const contentType = response.headers.get("content-type");
+                        if (!response.ok || !contentType || !contentType.includes("application/json")) {
+                            throw new Error("Сервер вернул неправильный формат ответа. Проверьте URL и авторизацию.");
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Заполняем форму данными
+                        document.getElementById('offer_id_kt').value = data.offer_id_kt;
+                        document.getElementById('offer_name_kt').value = data.offer_name_kt;
+                        document.getElementById('geo').value = data.geo;
+                        document.getElementById('rate_usd').value = data.rate_usd;
+                        
+                        // Обновляем action формы
+                        document.getElementById('editOfferForm').action = `/offers/edit/${offerId}/`;
+                        
+                        // Показываем модальное окно
+                        editModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                        alert(error.message || 'Ошибка при загрузке данных оффера');
+                    });
+            });
+        });
+    });
+</script>
+{% endblock %} 
