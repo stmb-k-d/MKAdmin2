@@ -42,10 +42,15 @@ def get_menu_items():
         {'name': 'tasks', 'title': 'Задачи', 'icon': 'fas fa-tasks'},
         {'name': 'finance', 'title': 'Финансы', 'icon': 'fas fa-money-bill-wave'},
         {'name': 'services', 'title': 'Сервисы', 'icon': 'fas fa-cogs'},
-        {'name': 'extra', 'title': 'Экстра', 'icon': 'fas fa-star'},
-        {'name': 'working_log', 'title': 'Working Log', 'icon': 'fas fa-clipboard-list'},
-        {'name': 'notifications', 'title': 'Уведомления', 'icon': 'fas fa-bell'},
-        {'name': 'profile', 'title': 'Профиль', 'icon': 'fas fa-user-circle'},
+        {'name': 'balance', 'title': 'Баланс:0.00', 'icon': '', 'no_link': True},
+        {'name': 'notifications', 'title': '', 'icon': 'fas fa-bell'},
+        {'name': 'profile', 'title': 'Профиль', 'icon': 'fas fa-user-circle',
+         'submenu': [
+             {'name': 'working_log', 'title': 'Working Log', 'icon': 'fas fa-clipboard-list'},
+             {'name': 'extra', 'title': 'Экстра', 'icon': 'fas fa-star'},
+             {'name': 'team', 'title': 'Команда', 'icon': 'fas fa-users'},
+         ]
+        },
     ]
 
 def index(request):
@@ -515,10 +520,20 @@ def notifications_view(request):
     })
 
 def profile_view(request):
-    return render(request, 'dashboard/profile.html', {
+    context = {
         'menu_items': get_menu_items(),
-        'page_title': 'Профиль'
-    })
+        'title': 'Профиль',
+        'page_title': 'Управление профилем'
+    }
+    return render(request, 'dashboard/profile.html', context)
+
+def team_view(request):
+    context = {
+        'menu_items': get_menu_items(),
+        'title': 'Команда',
+        'page_title': 'Управление командой'
+    }
+    return render(request, 'dashboard/team.html', context)
 
 def lp_view(request):
     return render(request, 'dashboard/lp.html', {

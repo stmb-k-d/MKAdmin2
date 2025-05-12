@@ -465,10 +465,16 @@
                             </li>
                         {% else %}
                             <li class="nav-item">
+                                {% if item.no_link %}
+                                <span class="nav-link">
+                                    {% if item.icon %}<i class="{{ item.icon }} matrix-icon"></i>{% endif %}<span>{{ item.title }}</span>
+                                </span>
+                                {% else %}
                                 <a class="nav-link {% if request.resolver_match.url_name == item.name %}active{% endif %}"
                                    href="{% url 'dashboard:'|add:item.name %}">
                                     <i class="{{ item.icon }} matrix-icon"></i><span>{{ item.title }}</span>
                                 </a>
+                                {% endif %}
                             </li>
                         {% endif %}
                     {% endfor %}

@@ -39,6 +39,7 @@ urlpatterns = [
     path('working_log/', views.working_log, name='working_log'),
     path('notifications/', views.notifications_view, name='notifications'),
     path('profile/', views.profile_view, name='profile'),
+    path('team/', views.team_view, name='team'),
     path('api/facebook/stats/data/', views.get_facebook_stats_data, name='facebook_stats_data'),
     path('api/facebook/stats/chart/', views.get_facebook_stats_chart_data, name='facebook_stats_chart'),
 ] 
