@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib import messages
 import logging
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ def get_menu_items():
         {'name': 'analytics', 'title': 'Аналитика', 'icon': 'fas fa-chart-pie',
          'direct_link': True,
          'submenu': [
+             {'name': 'kpi', 'title': 'KPI', 'icon': 'fas fa-tachometer-alt'},
              {'name': 'offers', 'title': 'Офферы', 'icon': 'fas fa-tags'},
              {'name': 'bundles', 'title': 'Связки', 'icon': 'fas fa-link'},
          ]
@@ -846,3 +848,139 @@ def edit_offer(request, offer_id):
         offer_data = dict(zip(columns, row))
     
     return JsonResponse(offer_data)
+
+def kpi_view(request):
+    with connection.cursor() as cursor:
+        cursor.execute('''
+            SELECT id, kt_campaign_id, kt_campaign_name, cpi, cpr, cps, broi,
+                   type_optimization, type
+            FROM kpi_controller
+        ''')
+        columns = [col[0] for col in cursor.description]
+        raw_kpi_list = cursor.fetchall()
+        
+        kpi_list = []
+        for row in raw_kpi_list:
+            item = dict(zip(columns, row))
+            # Преобразуем None в пустую строку для отображения
+            for key, val in item.items():
+                if val is None:
+                    item[key] = ""
+            kpi_list.append(item)
+    
+    return render(request, 'dashboard/kpi.html', {
+        'menu_items': get_menu_items(),
+        'title': 'KPI',
+        'page_title': 'KPI',
+        'kpi_list': kpi_list
+    })
+
+def get_kpi_data(request, kpi_id):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('''
+                SELECT * FROM kpi_controller WHERE id = %s
+            ''', [kpi_id])
+            columns = [col[0] for col in cursor.description]
+            row = cursor.fetchone()
+            if row:
+                kpi = dict(zip(columns, row))
+                return JsonResponse(kpi)
+            else:
+                return JsonResponse({'error': 'KPI не найден'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def update_kpi(request, kpi_id):
+    """Обновляет запись в kpi_controller по первичному ключу id."""
+    if request.method != 'POST':
+        logger.warning(f"[update_kpi] Вызван с методом {request.method}, ожидается POST")
+        return redirect('dashboard:kpi')
+
+    logger.info(f"[update_kpi] POST для id={kpi_id} (тип: {type(kpi_id)}): {request.POST.dict()}")
+
+    try:
+        # Убедимся, что kpi_id - это целое число
+        kpi_id = int(kpi_id)
+        logger.info(f"[update_kpi] ID преобразован в число: {kpi_id}")
+    except (ValueError, TypeError):
+        logger.error(f"[update_kpi] Ошибка преобразования ID к числу: {kpi_id}")
+        messages.error(request, f'Некорректный ID: {kpi_id}')
+        return redirect('dashboard:kpi')
+
+    # Список числовых полей для явного преобразования типов
+    numeric_fields = ['fb_cpc', 'fb_cpm', 'c2i', 'cr2i', 'cpi', 'cr2r', 'i2r', 
+                      'cpr', 'cr2d', 'r2s', 'cps', 'broi', 'cpa_dep', 'kt_campaign_id']
+                      
+    editable_fields = [
+        'kt_campaign_id', 'kt_campaign_name', 'fb_cpc', 'fb_cpm', 'c2i', 'cr2i',
+        'cpi', 'cr2r', 'i2r', 'cpr', 'cr2d', 'r2s', 'cps', 'broi', 'cpa_dep',
+        'link_camp', 'creo_id', 'type_optimization', 'type', 'send_to'
+    ]
+
+    set_clauses = []
+    params = []
+    for field in editable_fields:
+        value = request.POST.get(field)
+        # Обрабатываем пустые строки для числовых полей - устанавливаем их в NULL
+        if field in numeric_fields and (value == '' or value is None):
+            set_clauses.append(f"{field} = %s")
+            params.append(None)  # NULL в базе данных
+            logger.debug(f"[update_kpi] Установка NULL для пустого поля {field}")
+        elif value is not None and value != '':
+            # Преобразование числовых полей
+            if field in numeric_fields:
+                try:
+                    # Пробуем преобразовать в число с плавающей точкой
+                    if '.' in value or ',' in value:
+                        value = float(value.replace(',', '.'))
+                    else:
+                        value = int(value)
+                    logger.debug(f"[update_kpi] Преобразовано числовое поле {field}={value}")
+                except (ValueError, TypeError):
+                    logger.warning(f"[update_kpi] Не удалось преобразовать поле {field}='{value}' в число")
+                    # Пропускаем некорректные значения
+                    continue
+                    
+            set_clauses.append(f"{field} = %s")
+            params.append(value)
+            logger.debug(f"[update_kpi] Добавлено поле {field}={value} (тип: {type(value)})")
+
+    if not set_clauses:
+        logger.warning(f"[update_kpi] Нет изменений для сохранения id={kpi_id}")
+        messages.warning(request, 'Нет изменений для сохранения')
+        return redirect('dashboard:kpi')
+
+    params.append(kpi_id)
+    sql = f"UPDATE kpi_controller SET {', '.join(set_clauses)} WHERE id = %s"
+    logger.info(f"[update_kpi] SQL: {sql}")
+    logger.info(f"[update_kpi] Параметры: {params}")
+
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                logger.info(f"[update_kpi] Выполняется запрос для id={kpi_id}")
+                # Сначала проверим существование записи
+                cursor.execute("SELECT EXISTS(SELECT 1 FROM kpi_controller WHERE id = %s)", [kpi_id])
+                exists = cursor.fetchone()[0]
+                if not exists:
+                    logger.warning(f"[update_kpi] Запись с id={kpi_id} не найдена")
+                    messages.warning(request, f'Запись KPI #{kpi_id} не найдена в базе данных')
+                    return redirect('dashboard:kpi')
+                
+                # Теперь выполняем обновление
+                cursor.execute(sql, params)
+                affected = cursor.rowcount
+                logger.info(f"[update_kpi] Запрос выполнен, rowcount={affected}")
+                
+                if affected == 0:
+                    logger.info(f"[update_kpi] Запись с id={kpi_id} существует, но не обновлена")
+                    messages.warning(request, f'Данные для KPI #{kpi_id} не изменились или совпадают (ROWCOUNT=0)')
+                else:
+                    logger.info(f"[update_kpi] Запись успешно обновлена, id={kpi_id}")
+                    messages.success(request, f'KPI #{kpi_id} успешно обновлён (ROWCOUNT={affected})')
+    except Exception as exc:
+        logger.exception(f'[update_kpi] Ошибка при обновлении id={kpi_id}: %s', exc)
+        messages.error(request, f'Ошибка при обновлении: {exc}')
+
+    return redirect('dashboard:kpi')

@@ -1,0 +1,322 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}KPI{% endblock %}
+
+{% block page_title %}KPI{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Управление KPI</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Campaign ID</th>
+                        <th>Campaign Name</th>
+                        <th>CPI</th>
+                        <th>CPR</th>
+                        <th>CPS</th>
+                        <th>BROI</th>
+                        <th>Optimization Type</th>
+                        <th>Type</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kpi in kpi_list %}
+                    <tr>
+                        <td>{{ kpi.id }}</td>
+                        <td>{{ kpi.kt_campaign_id }}</td>
+                        <td>{{ kpi.kt_campaign_name }}</td>
+                        <td>{{ kpi.cpi }}</td>
+                        <td>{{ kpi.cpr }}</td>
+                        <td>{{ kpi.cps }}</td>
+                        <td>{{ kpi.broi }}</td>
+                        <td>{{ kpi.type_optimization }}</td>
+                        <td>{{ kpi.type }}</td>
+                        <td>
+                            <button type="button" class="btn btn-primary btn-sm edit-kpi" 
+                                    data-id="{{ kpi.id }}"
+                                    data-kt-campaign-id="{{ kpi.kt_campaign_id }}"
+                                    data-kt-campaign-name="{{ kpi.kt_campaign_name }}"
+                                    data-fb-cpc="{{ kpi.fb_cpc }}"
+                                    data-fb-cpm="{{ kpi.fb_cpm }}"
+                                    data-c2i="{{ kpi.c2i }}"
+                                    data-cr2i="{{ kpi.cr2i }}"
+                                    data-cpi="{{ kpi.cpi }}"
+                                    data-cr2r="{{ kpi.cr2r }}"
+                                    data-i2r="{{ kpi.i2r }}"
+                                    data-cpr="{{ kpi.cpr }}"
+                                    data-cr2d="{{ kpi.cr2d }}"
+                                    data-r2s="{{ kpi.r2s }}"
+                                    data-cps="{{ kpi.cps }}"
+                                    data-broi="{{ kpi.broi }}"
+                                    data-cpa-dep="{{ kpi.cpa_dep }}"
+                                    data-link-camp="{{ kpi.link_camp }}"
+                                    data-creo-id="{{ kpi.creo_id }}"
+                                    data-type-optimization="{{ kpi.type_optimization }}"
+                                    data-type="{{ kpi.type }}"
+                                    data-send-to="{{ kpi.send_to }}">
+                                Редактировать
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования -->
+<div class="modal fade" id="editKpiModal" tabindex="-1" aria-labelledby="editKpiModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editKpiModalLabel">Редактирование KPI</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editKpiForm" method="post" action="" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- Отладочное поле - видимый ID -->
+                    <div class="mb-3">
+                        <label for="debug_id" class="form-label">ID записи (не редактировать)</label>
+                        <input type="text" class="form-control bg-light" id="debug_id" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="kt_campaign_id" class="form-label">Campaign ID</label>
+                        <input type="text" class="form-control" id="kt_campaign_id" name="kt_campaign_id" 
+                               inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="kt_campaign_name" class="form-label">Campaign Name</label>
+                        <input type="text" class="form-control" id="kt_campaign_name" name="kt_campaign_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fb_cpc" class="form-label">FB CPC</label>
+                        <input type="text" class="form-control" id="fb_cpc" name="fb_cpc" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fb_cpm" class="form-label">FB CPM</label>
+                        <input type="text" class="form-control" id="fb_cpm" name="fb_cpm" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="c2i" class="form-label">C2I</label>
+                        <input type="text" class="form-control" id="c2i" name="c2i" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cr2i" class="form-label">CR2I</label>
+                        <input type="text" class="form-control" id="cr2i" name="cr2i" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cpi" class="form-label">CPI</label>
+                        <input type="text" class="form-control" id="cpi" name="cpi" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cr2r" class="form-label">CR2R</label>
+                        <input type="text" class="form-control" id="cr2r" name="cr2r" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="i2r" class="form-label">I2R</label>
+                        <input type="text" class="form-control" id="i2r" name="i2r" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cpr" class="form-label">CPR</label>
+                        <input type="text" class="form-control" id="cpr" name="cpr" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cr2d" class="form-label">CR2D</label>
+                        <input type="text" class="form-control" id="cr2d" name="cr2d" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="r2s" class="form-label">R2S</label>
+                        <input type="text" class="form-control" id="r2s" name="r2s" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cps" class="form-label">CPS</label>
+                        <input type="text" class="form-control" id="cps" name="cps" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="broi" class="form-label">BROI</label>
+                        <input type="text" class="form-control" id="broi" name="broi" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cpa_dep" class="form-label">CPA DEP</label>
+                        <input type="text" class="form-control" id="cpa_dep" name="cpa_dep" 
+                               inputmode="decimal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="link_camp" class="form-label">Link Campaign</label>
+                        <input type="text" class="form-control" id="link_camp" name="link_camp">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="creo_id" class="form-label">Creo ID</label>
+                        <input type="text" class="form-control" id="creo_id" name="creo_id">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="type_optimization" class="form-label">Type Optimization</label>
+                        <input type="text" class="form-control" id="type_optimization" name="type_optimization">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Type</label>
+                        <input type="text" class="form-control" id="type" name="type">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="send_to" class="form-label">Send To</label>
+                        <input type="text" class="form-control" id="send_to" name="send_to">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка нажатия на кнопку редактирования
+    const editButtons = document.querySelectorAll('.edit-kpi');
+    
+    // Добавляем обработчик для формы один раз
+    const form = document.getElementById('editKpiForm');
+    form.addEventListener('submit', function(event) {
+        console.log("Отправка формы...");
+        console.log("URL формы:", this.action);
+        console.log("Метод:", this.method);
+        
+        // Выведем все поля формы для отладки
+        const formData = new FormData(this);
+        console.log("Данные формы:");
+        
+        // Массив числовых полей для проверки
+        const numericFields = ['fb_cpc', 'fb_cpm', 'c2i', 'cr2i', 'cpi', 'cr2r', 'i2r', 
+                            'cpr', 'cr2d', 'r2s', 'cps', 'broi', 'cpa_dep', 'kt_campaign_id'];
+        
+        // Проверка числовых полей
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+            
+            // Проверка числовых полей
+            if (numericFields.includes(key) && value !== '') {
+                // Заменяем запятые на точки для корректного парсинга
+                value = value.replace(',', '.');
+                
+                // Проверяем, является ли значение числом
+                if (isNaN(parseFloat(value))) {
+                    console.error(`Поле ${key} должно содержать числовое значение, получено: ${value}`);
+                    alert(`Ошибка: поле ${key} должно содержать числовое значение!`);
+                    event.preventDefault();
+                    return false;
+                }
+            }
+            // Пустые числовые поля разрешены
+        }
+        
+        // Убедимся что все ключевые поля заполнены
+        const kt_campaign_id = document.getElementById('kt_campaign_id').value;
+        const kt_campaign_name = document.getElementById('kt_campaign_name').value;
+        
+        if (!kt_campaign_id || !kt_campaign_name) {
+            event.preventDefault();
+            alert("Необходимо заполнить Campaign ID и Campaign Name!");
+            return false;
+        }
+        
+        // Убеждаемся, что kt_campaign_id - число, если оно заполнено
+        if (kt_campaign_id && isNaN(parseInt(kt_campaign_id))) {
+            event.preventDefault();
+            alert("Campaign ID должен быть числом!");
+            return false;
+        }
+    });
+    
+    // Упрощенный код для заполнения формы и показа модального окна
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const kpiId = this.getAttribute('data-id');
+            console.log("Редактирование KPI ID:", kpiId);
+            
+            // Заполняем отладочное поле ID
+            document.getElementById('debug_id').value = kpiId;
+            
+            // Заполняем форму данными из атрибутов
+            const fields = [
+                'kt_campaign_id', 'kt_campaign_name', 'fb_cpc', 'fb_cpm', 'c2i', 'cr2i',
+                'cpi', 'cr2r', 'i2r', 'cpr', 'cr2d', 'r2s', 'cps', 'broi', 'cpa_dep',
+                'link_camp', 'creo_id', 'type_optimization', 'type', 'send_to'
+            ];
+            
+            fields.forEach(field => {
+                const dataField = 'data-' + field.replace(/_/g, '-');
+                const value = this.getAttribute(dataField);
+                if (value) {
+                    document.getElementById(field).value = value;
+                } else {
+                    document.getElementById(field).value = '';
+                }
+            });
+            
+            // Правильно формируем URL для обновления
+            // Используем URL из Django с заменой ID
+            // Убедимся, что замена происходит только для числового ID
+            const updateUrl = "{% url 'dashboard:update_kpi' 999999 %}".replace('999999', kpiId);
+            console.log("URL для обновления:", updateUrl);
+            
+            // Устанавливаем URL формы
+            form.action = updateUrl;
+            
+            // Открываем модальное окно с проверками
+            try {
+                const modalElement = document.getElementById('editKpiModal');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } catch (error) {
+                console.error('Ошибка при открытии модального окна:', error);
+                alert('Проблема с инициализацией Bootstrap. Пожалуйста, обновите страницу.');
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 
