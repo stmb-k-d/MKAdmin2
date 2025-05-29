@@ -495,11 +495,92 @@ def update_id_acc_bd(request, ad_id):
     return redirect('dashboard:ad_detail', ad_id=ad_id)
 
 def working_log(request):
-    return render(request, 'dashboard/working_log.html', {
-        'menu_items': get_menu_items(),
-        'title': 'Working Log',
-        'page_title': 'Working Log'
-    })
+    try:
+        # Получаем параметр поиска из запроса
+        search_query = request.GET.get('search', '').strip()
+        
+        with connection.cursor() as cursor:
+            # Проверяем существование таблицы (PostgreSQL)
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'working_log'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
+            
+            if not table_exists:
+                return render(request, 'dashboard/working_log.html', {
+                    'error': 'Таблица working_log не существует в базе данных',
+                    'menu_items': get_menu_items(),
+                    'title': 'Working Log',
+                    'page_title': 'Working Log'
+                })
+            
+            # Получаем список колонок (PostgreSQL)
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'working_log'
+                ORDER BY ordinal_position;
+            """)
+            columns = [row[0] for row in cursor.fetchall()]
+            
+            # Строим SQL запрос с учетом поиска и ЛИМИТОМ
+            sql = "SELECT * FROM working_log"
+            params = []
+            
+            if search_query:
+                # Создаем условия поиска по всем текстовым полям
+                search_conditions = []
+                for col in columns:
+                    if col in ['msg', 'msg_decription', 'categorie', 'type', 'sub_user', 'notification']:
+                        search_conditions.append(f"{col}::text ILIKE %s")
+                        params.append(f'%{search_query}%')
+                
+                if search_conditions:
+                    sql += " WHERE " + " OR ".join(search_conditions)
+            
+            # Сортируем по datetime в убывающем порядке и ОГРАНИЧИВАЕМ
+            sql += " ORDER BY datetime DESC LIMIT 1000"
+            
+            # Выполняем запрос
+            cursor.execute(sql, params)
+            
+            data = []
+            for row in cursor.fetchall():
+                item = {}
+                for i, col in enumerate(columns):
+                    # Форматирование данных
+                    if col == 'datetime' and row[i]:
+                        # Пытаемся распарсить datetime
+                        try:
+                            if hasattr(row[i], 'strftime'):
+                                item[col] = row[i].strftime('%Y-%m-%d %H:%M:%S')
+                            else:
+                                item[col] = str(row[i])
+                        except:
+                            item[col] = str(row[i])
+                    else:
+                        item[col] = row[i]
+                data.append(item)
+            
+            return render(request, 'dashboard/working_log.html', {
+                'data': data,
+                'columns': columns,
+                'search_query': search_query,
+                'menu_items': get_menu_items(),
+                'title': 'Working Log',
+                'page_title': 'Working Log'
+            })
+            
+    except Exception as e:
+        return render(request, 'dashboard/working_log.html', {
+            'error': f'Ошибка при получении данных: {str(e)}',
+            'menu_items': get_menu_items(),
+            'title': 'Working Log',
+            'page_title': 'Working Log'
+        })
 
 def extra_view(request):
     return render(request, 'dashboard/extra.html', {

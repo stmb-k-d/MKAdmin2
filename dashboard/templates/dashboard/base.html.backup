@@ -9,7 +9,6 @@
     <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     {% block extra_head %}{% endblock %}
     <style>
@@ -426,66 +425,10 @@
         .dropdown-toggle:not([data-bs-toggle]) {
             cursor: pointer;
         }
-
-        /* Стили для индикатора загрузки */
-        .page-loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 9999;
-        }
-
-        .page-loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        .page-loading-text {
-            color: var(--text-primary);
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Кастомизация NProgress */
-        #nprogress .bar {
-            background: var(--primary-color) !important;
-            height: 3px !important;
-        }
-
-        #nprogress .peg {
-            box-shadow: 0 0 10px var(--primary-color), 0 0 5px var(--primary-color) !important;
-        }
-
-        #nprogress .spinner-icon {
-            border-top-color: var(--primary-color) !important;
-            border-left-color: var(--primary-color) !important;
-        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="page-loading-overlay" id="pageLoadingOverlay">
-        <div class="page-loading-spinner"></div>
-        <div class="page-loading-text">Загрузка данных...</div>
-    </div>
-
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'dashboard:dashboard' %}">
@@ -554,7 +497,6 @@
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
     <script src="{% static 'dashboard/js/sounds.js' %}"></script>
     <script>
         // Обеспечиваем правильное отображение выпадающего меню
@@ -638,67 +580,6 @@
                     });
                 });
             }
-        });
-    </script>
-    
-    <script>
-        // Глобальный индикатор загрузки
-        document.addEventListener('DOMContentLoaded', function() {
-            const pageLoadingOverlay = document.getElementById('pageLoadingOverlay');
-            const heavyPages = ['/statistic/facebook/', '/ads/', '/working_log/'];
-            
-            // Функция для показа индикатора
-            function showLoading() {
-                NProgress.start();
-                
-                // Показываем дополнительный индикатор для тяжелых страниц
-                const currentPath = window.location.pathname;
-                if (heavyPages.some(page => currentPath.includes(page))) {
-                    pageLoadingOverlay.style.display = 'flex';
-                }
-            }
-            
-            // Функция для скрытия индикатора
-            function hideLoading() {
-                NProgress.done();
-                pageLoadingOverlay.style.display = 'none';
-            }
-            
-            // Обработчик кликов по ссылкам
-            document.addEventListener('click', function(e) {
-                const link = e.target.closest('a');
-                if (link && link.href && !link.href.startsWith('javascript:') && !link.href.startsWith('#')) {
-                    // Проверяем, что это внутренняя ссылка
-                    if (link.hostname === window.location.hostname) {
-                        showLoading();
-                    }
-                }
-            });
-            
-            // Обработчик отправки форм
-            document.addEventListener('submit', function(e) {
-                showLoading();
-            });
-            
-            // Обработчик навигации браузера (кнопка "Назад")
-            window.addEventListener('popstate', function() {
-                showLoading();
-            });
-            
-            // Скрываем индикатор при полной загрузке страницы
-            window.addEventListener('load', function() {
-                hideLoading();
-            });
-            
-            // Скрываем индикатор при готовности DOM (резервный вариант)
-            if (document.readyState === 'complete') {
-                hideLoading();
-            }
-            
-            // Резервный таймаут для скрытия индикатора (на случай зависания)
-            setTimeout(function() {
-                hideLoading();
-            }, 30000); // 30 секунд максимум
         });
     </script>
     {% block extra_js %}{% endblock %}
