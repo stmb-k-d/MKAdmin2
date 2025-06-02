@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.contrib import messages
 import logging
 from django.db import transaction
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -565,13 +566,39 @@ def working_log(request):
                 for i, col in enumerate(columns):
                     # Форматирование данных
                     if col == 'datetime' and row[i]:
-                        # Пытаемся распарсить datetime
+                        # Пытаемся распарсить datetime и конвертировать в лондонскую таймзону
                         try:
                             if hasattr(row[i], 'strftime'):
-                                item[col] = row[i].strftime('%Y-%m-%d %H:%M:%S')
+                                # Если это datetime объект из БД
+                                dt = row[i]
+                                
+                                # Определяем лондонскую таймзону
+                                london_tz = ZoneInfo('Europe/London')
+                                
+                                # Если datetime не имеет информации о таймзоне, считаем что это UTC
+                                if dt.tzinfo is None:
+                                    dt = dt.replace(tzinfo=ZoneInfo('UTC'))
+                                
+                                # Конвертируем в лондонскую таймзону
+                                london_dt = dt.astimezone(london_tz)
+                                
+                                # Форматируем в строку
+                                item[col] = london_dt.strftime('%Y-%m-%d %H:%M:%S %Z')
                             else:
-                                item[col] = str(row[i])
-                        except:
+                                # Если это строка, пытаемся распарсить
+                                try:
+                                    dt = datetime.fromisoformat(str(row[i]).replace('Z', '+00:00'))
+                                    london_tz = ZoneInfo('Europe/London')
+                                    
+                                    if dt.tzinfo is None:
+                                        dt = dt.replace(tzinfo=ZoneInfo('UTC'))
+                                    
+                                    london_dt = dt.astimezone(london_tz)
+                                    item[col] = london_dt.strftime('%Y-%m-%d %H:%M:%S %Z')
+                                except:
+                                    item[col] = str(row[i])
+                        except Exception as e:
+                            # В случае ошибки оставляем исходное значение
                             item[col] = str(row[i])
                     else:
                         item[col] = row[i]
