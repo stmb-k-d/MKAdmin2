@@ -290,8 +290,20 @@ def campaigns(request):
     })
 
 def adsets(request):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT * FROM adset_data')
+        columns = [col[0] for col in cursor.description]
+        adsets = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        # Получаем список всех колонок для выбора пользователем
+        all_columns = columns
+    
     return render(request, 'dashboard/adsets.html', {
-        'menu_items': get_menu_items()
+        'menu_items': get_menu_items(),
+        'title': 'Adsets',
+        'page_title': 'Наборы объявлений',
+        'adsets': adsets,
+        'all_columns': json.dumps(all_columns)
     })
 
 def ads(request):
