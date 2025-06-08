@@ -1533,3 +1533,74 @@ def update_account_token(request):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+def update_fbt_acc_id(request):
+    """Обновляет FBT ACC ID аккаунта в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        new_fbt_acc_id = data.get('fbt_acc_id')
+        
+        # Валидация входных данных
+        if not account_id or new_fbt_acc_id is None:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта или FBT ACC ID'
+            })
+        
+        # Проверяем, что fbt_acc_id является числом
+        try:
+            fbt_acc_id_int = int(new_fbt_acc_id)
+        except (ValueError, TypeError):
+            return JsonResponse({
+                'success': False,
+                'error': 'FBT ACC ID должен быть числом'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта
+            cursor.execute(
+                'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            if not cursor.fetchone():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            # Обновляем fbt_acc_id аккаунта
+            cursor.execute(
+                'UPDATE accs_data SET fbt_acc_id = %s WHERE id_acc_bd = %s',
+                [fbt_acc_id_int, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'FBT ACC ID успешно обновлен'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить FBT ACC ID'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении FBT ACC ID: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })

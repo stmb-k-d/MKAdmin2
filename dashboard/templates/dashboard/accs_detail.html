@@ -95,7 +95,7 @@
                                         <button class="btn btn-outline-primary" onclick="openTokenModal()">
                                             <i class="fas fa-key"></i> Изменить токен аккаунта
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-primary" onclick="openFbtAccIdModal()">
                                             <i class="fas fa-id-card"></i> Изменить FBT Acc ID
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -485,6 +485,33 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" onclick="updateAccountToken()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для изменения FBT ACC ID -->
+<div class="modal fade" id="fbtAccIdModal" tabindex="-1" aria-labelledby="fbtAccIdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fbtAccIdModalLabel">Изменить FBT ACC ID</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="fbtAccIdForm">
+                    <div class="mb-3">
+                        <label for="fbtAccIdInput" class="form-label">Введите новый FBT ACC ID:</label>
+                        <input type="number" class="form-control" id="fbtAccIdInput" name="fbt_acc_id" required>
+                        <div class="form-text">Введите числовой ID аккаунта в FBTool</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="fbtAccIdError"></div>
+                    <div class="alert alert-success d-none" id="fbtAccIdSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateFbtAccId()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -891,6 +918,73 @@ function showTokenSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('tokenError').classList.add('d-none');
+}
+
+function openFbtAccIdModal() {
+    document.getElementById('fbtAccIdInput').value = '{{ account.fbt_acc_id|default:"" }}';
+    document.getElementById('fbtAccIdError').classList.add('d-none');
+    document.getElementById('fbtAccIdSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('fbtAccIdModal'));
+    modal.show();
+}
+
+function updateFbtAccId() {
+    const fbtAccIdInput = document.getElementById('fbtAccIdInput');
+    const newFbtAccId = fbtAccIdInput.value.trim();
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!newFbtAccId) {
+        showFbtAccIdError('Пожалуйста, введите FBT ACC ID.');
+        return;
+    }
+    
+    if (isNaN(newFbtAccId) || parseInt(newFbtAccId) <= 0) {
+        showFbtAccIdError('FBT ACC ID должен быть положительным числом.');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-fbt-acc-id/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'fbt_acc_id': parseInt(newFbtAccId)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showFbtAccIdSuccess('FBT ACC ID успешно обновлен!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showFbtAccIdError(data.error || 'Произошла ошибка при обновлении FBT ACC ID.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showFbtAccIdError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showFbtAccIdError(message) {
+    const errorEl = document.getElementById('fbtAccIdError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('fbtAccIdSuccess').classList.add('d-none');
+}
+
+function showFbtAccIdSuccess(message) {
+    const successEl = document.getElementById('fbtAccIdSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('fbtAccIdError').classList.add('d-none');
 }
 
 function getCookie(name) {
