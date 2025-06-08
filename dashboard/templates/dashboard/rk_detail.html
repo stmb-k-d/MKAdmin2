@@ -310,7 +310,7 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="list-group list-group-flush">
-                                <button class="list-group-item list-group-item-action small" disabled>Изменить статус РК</button>
+                                <button class="list-group-item list-group-item-action small" id="changeStatusBtn" data-bs-toggle="modal" data-bs-target="#changeStatusModal">Изменить статус РК</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить расходы РК за конкретную дату</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить расходы РК за все время</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить AD ID</button>
@@ -333,4 +333,99 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Модальное окно для изменения статуса РК -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeStatusModalLabel">Изменить статус РК</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Текущий статус:</strong> 
+                    <span class="badge {% if rk.live_status == 'ACTIVE' %}bg-success
+                                     {% elif rk.live_status == 'PendingUnban' %}bg-warning
+                                     {% elif rk.live_status == 'BAN' %}bg-danger
+                                     {% elif rk.live_status == 'MOD' %}bg-warning
+                                     {% elif rk.live_status == 'PAUSE' %}bg-secondary
+                                     {% elif rk.live_status == 'NEW' %}bg-info
+                                     {% elif rk.live_status == 'READY' %}bg-success
+                                     {% elif rk.live_status == 'WarmUp' %}bg-primary
+                                     {% else %}bg-secondary{% endif %}">
+                        {{ rk.live_status }}
+                    </span>
+                </div>
+                <form id="changeStatusForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label">Выберите новый статус:</label>
+                        <select class="form-select" id="newStatus" name="new_status" required>
+                            <option value="">-- Выберите статус --</option>
+                            <option value="NEW">NEW</option>
+                            <option value="WarmUp">WarmUp</option>
+                            <option value="READY">READY</option>
+                            <option value="MOD">MOD</option>
+                            <option value="HOLD">HOLD</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="REJECTED">REJECTED</option>
+                            <option value="BAN">BAN</option>
+                            <option value="PAUSE">PAUSE</option>
+                            <option value="PendingUnban">PendingUnban</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusChange">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmBtn = document.getElementById('confirmStatusChange');
+    const statusSelect = document.getElementById('newStatus');
+    
+    confirmBtn.addEventListener('click', function() {
+        const newStatus = statusSelect.value;
+        
+        if (!newStatus) {
+            alert('Пожалуйста, выберите статус');
+            return;
+        }
+        
+        // Отправляем Ajax запрос для обновления статуса
+        fetch("{% url 'dashboard:update_rk_status' rk.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'new_status=' + encodeURIComponent(newStatus)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('changeStatusModal'));
+                modal.hide();
+                
+                // Перезагружаем страницу для отображения нового статуса
+                location.reload();
+            } else {
+                alert('Ошибка при обновлении статуса: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при обновлении статуса');
+        });
+    });
+});
+</script>
+
 {% endblock %} 

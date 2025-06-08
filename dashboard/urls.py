@@ -23,6 +23,7 @@ urlpatterns = [
     path('accs/update-email-password/', views.update_email_password, name='update_email_password'),
     path('rk/', views.rk_view, name='rk'),
     path('rk/<int:rk_id>/', views.rk_detail, name='rk_detail'),
+    path('rk/update-status/<int:rk_id>/', views.update_rk_status, name='update_rk_status'),
     path('campaigns/', views.campaigns, name='campaigns'),
     path('adsets/', views.adsets, name='adsets'),
     path('ads/', views.ads, name='ads'),

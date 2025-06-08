@@ -1828,3 +1828,70 @@ def update_email_password(request):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+def update_rk_status(request, rk_id):
+    """Обновляет статус рекламного кабинета в таблице rk_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Получаем новый статус из POST данных
+        new_status = request.POST.get('new_status')
+        
+        # Валидация входных данных
+        if not new_status:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан новый статус'
+            })
+        
+        new_status = new_status.strip()
+        
+        # Проверяем, что статус входит в допустимые значения
+        allowed_statuses = ['NEW', 'WarmUp', 'READY', 'MOD', 'HOLD', 'ACTIVE', 'REJECTED', 'BAN', 'PAUSE', 'PendingUnban']
+        if new_status not in allowed_statuses:
+            return JsonResponse({
+                'success': False,
+                'error': f'Недопустимый статус. Разрешенные статусы: {", ".join(allowed_statuses)}'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование РК
+            cursor.execute(
+                'SELECT id, rk_id FROM rk_data WHERE id = %s',
+                [rk_id]
+            )
+            
+            rk_data = cursor.fetchone()
+            if not rk_data:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Рекламный кабинет не найден'
+                })
+            
+            # Обновляем статус РК
+            cursor.execute(
+                'UPDATE rk_data SET live_status = %s WHERE id = %s',
+                [new_status, rk_id]
+            )
+            
+            if cursor.rowcount > 0:
+                logger.info(f'Статус РК id={rk_id} (rk_id={rk_data[1]}) обновлен на {new_status}')
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Статус РК успешно изменен на {new_status}'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить статус РК'
+                })
+                
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении статуса РК id={rk_id}: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
