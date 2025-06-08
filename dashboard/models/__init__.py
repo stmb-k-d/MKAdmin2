@@ -3,6 +3,7 @@ from .accs import FacebookAccount, AccountProxy
 from .rk import Campaign, AdSet, Ad
 from .statistics import CampaignStatistic, AdSetStatistic, AdStatistic
 from .menu import MenuItem
+from .auth import User
 
 __all__ = [
     'Proxy',
@@ -15,4 +16,5 @@ __all__ = [
     'AdSetStatistic',
     'AdStatistic',
     'MenuItem',
+    'User',
 ] 

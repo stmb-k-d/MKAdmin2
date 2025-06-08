@@ -4,6 +4,11 @@ from . import views
 app_name = 'dashboard'
 
 urlpatterns = [
+    # Аутентификация
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    
+    # Основные страницы
     path('', views.index, name='index'),
     path('proxy/', views.proxy, name='proxy'),
     path('proxy/<int:proxy_id>/', views.proxy_detail, name='proxy_detail'),

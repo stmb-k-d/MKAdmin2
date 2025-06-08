@@ -526,6 +526,11 @@
                                 <span class="nav-link">
                                     {% if item.icon %}<i class="{{ item.icon }} matrix-icon"></i>{% endif %}<span>{{ item.title }}</span>
                                 </span>
+                                {% elif item.special == 'logout' %}
+                                <a class="nav-link" href="{% url 'dashboard:logout' %}" 
+                                   onclick="return confirm('Вы уверены, что хотите выйти?')">
+                                    <i class="{{ item.icon }} matrix-icon"></i><span>{{ item.title }}</span>
+                                </a>
                                 {% else %}
                                 <a class="nav-link {% if request.resolver_match.url_name == item.name %}active{% endif %}"
                                    href="{% url 'dashboard:'|add:item.name %}">

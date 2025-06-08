@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.db import connection
-from .models import MenuItem, Campaign, AdSet, Ad, Proxy
+from .models import MenuItem, Campaign, AdSet, Ad, Proxy, User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -8,13 +8,72 @@ import json
 import sys
 from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
 from django.contrib import messages
 import logging
 from django.db import transaction
 from zoneinfo import ZoneInfo
+from .forms import LoginForm
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+def get_client_ip(request):
+    """Получить IP-адрес клиента"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+def login_view(request):
+    """Вход в систему"""
+    if request.user.is_authenticated:
+        return redirect('dashboard:index')
+    
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            
+            # Обновляем данные последнего входа
+            user.last_login_at = timezone.now()
+            user.last_login_ip = get_client_ip(request)
+            user.generate_session_token()
+            
+            login(request, user)
+            messages.success(request, f'Добро пожаловать, {user.email}!')
+            
+            # Редирект на следующую страницу или главную
+            next_url = request.GET.get('next', '/')
+            return redirect(next_url)
+        else:
+            messages.error(request, 'Ошибка входа в систему')
+    else:
+        form = LoginForm()
+    
+    return render(request, 'dashboard/login.html', {
+        'form': form,
+        'title': 'Вход в систему'
+    })
+
+def logout_view(request):
+    """Выход из системы"""
+    if request.user.is_authenticated:
+        # Очищаем session token
+        try:
+            user = User.objects.get(id=request.user.id)
+            user.clear_session_token()
+        except User.DoesNotExist:
+            pass
+        
+        logout(request)
+        messages.success(request, 'Вы успешно вышли из системы')
+    
+    return redirect('dashboard:login')
 
 def get_menu_items():
     return [
@@ -53,8 +112,10 @@ def get_menu_items():
              {'name': 'team', 'title': 'Команда', 'icon': 'fas fa-users'},
          ]
         },
+        {'name': 'logout', 'title': 'Выход', 'icon': 'fas fa-sign-out-alt', 'special': 'logout'},
     ]
 
+@login_required
 def index(request):
     return render(request, 'dashboard/index.html', {
         'menu_items': get_menu_items(),
@@ -62,6 +123,7 @@ def index(request):
         'page_title': 'Панель управления'
     })
 
+@login_required
 def proxy(request):
     with connection.cursor() as cursor:
         cursor.execute('SELECT * FROM proxy_data')
@@ -76,6 +138,7 @@ def proxy(request):
     }
     return render(request, 'dashboard/proxy.html', context)
 
+@login_required
 def check_proxy(request, proxy_id):
     try:
         proxy = Proxy.objects.get(id=proxy_id)
@@ -84,6 +147,7 @@ def check_proxy(request, proxy_id):
     except Proxy.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Прокси не найден'})
 
+@login_required
 def delete_proxy(request, proxy_id):
     if request.method == 'POST':
         try:
@@ -101,12 +165,14 @@ def delete_proxy(request, proxy_id):
     else:
         return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
 
+@login_required
 def count_free_proxies(request):
     with connection.cursor() as cursor:
         cursor.execute('SELECT COUNT(*) FROM proxy_data WHERE accs IS NULL')
         count = cursor.fetchone()[0]
     return JsonResponse({'count': count})
 
+@login_required
 def accs_view(request):
     with connection.cursor() as cursor:
         cursor.execute('SELECT * FROM accs_data')
@@ -127,6 +193,7 @@ def accs_view(request):
         'all_columns': json.dumps(all_columns)
     })
 
+@login_required
 def accs_detail(request, account_id):
     with connection.cursor() as cursor:
         cursor.execute("SELECT * FROM accs_data WHERE id_acc_bd = %s", [account_id])
@@ -156,6 +223,7 @@ def accs_detail(request, account_id):
     }
     return render(request, 'dashboard/accs_detail.html', context)
 
+@login_required
 def rk_view(request):
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -232,6 +300,7 @@ def rk_view(request):
         'rks': rks
     })
 
+@login_required
 def statistic_view(request):
     return render(request, 'dashboard/statistic.html', {
         'menu_items': get_menu_items(),
@@ -239,6 +308,7 @@ def statistic_view(request):
         'page_title': 'Статистика'
     })
 
+@login_required
 def analytics_view(request):
     return render(request, 'dashboard/analytics.html', {
         'menu_items': get_menu_items(),
@@ -246,6 +316,7 @@ def analytics_view(request):
         'page_title': 'Аналитика'
     })
 
+@login_required
 def tasks_view(request):
     return render(request, 'dashboard/tasks.html', {
         'menu_items': get_menu_items(),
@@ -253,6 +324,7 @@ def tasks_view(request):
         'page_title': 'Управление задачами'
     })
 
+@login_required
 def finance_view(request):
     return render(request, 'dashboard/finance.html', {
         'menu_items': get_menu_items(),
@@ -260,6 +332,7 @@ def finance_view(request):
         'page_title': 'Финансы'
     })
 
+@login_required
 def services_view(request):
     return render(request, 'dashboard/services.html', {
         'menu_items': get_menu_items(),
@@ -267,6 +340,7 @@ def services_view(request):
         'page_title': 'Управление сервисами'
     })
 
+@login_required
 def dashboard_view(request):
     return render(request, 'dashboard/dashboard.html', {
         'menu_items': get_menu_items(),
@@ -274,6 +348,7 @@ def dashboard_view(request):
         'page_title': 'Главная страница'
     })
 
+@login_required
 def proxy_detail(request, proxy_id):
     with connection.cursor() as cursor:
         cursor.execute("SELECT * FROM proxy_data WHERE proxy_id = %s", [proxy_id])
@@ -292,6 +367,7 @@ def proxy_detail(request, proxy_id):
     }
     return render(request, 'dashboard/proxy_detail.html', context)
 
+@login_required
 def rk_detail(request, rk_id):
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -306,11 +382,13 @@ def rk_detail(request, rk_id):
     }
     return render(request, 'dashboard/rk_detail.html', context)
 
+@login_required
 def campaigns(request):
     return render(request, 'dashboard/campaigns.html', {
         'menu_items': get_menu_items()
     })
 
+@login_required
 def adsets(request):
     with connection.cursor() as cursor:
         cursor.execute('SELECT * FROM adset_data')
@@ -328,6 +406,7 @@ def adsets(request):
         'all_columns': json.dumps(all_columns)
     })
 
+@login_required
 def ads(request):
     with connection.cursor() as cursor:
         cursor.execute('SELECT * FROM ad_data')
@@ -345,6 +424,7 @@ def ads(request):
         'all_columns': json.dumps(all_columns)
     })
 
+@login_required
 def ad_detail(request, ad_id):
     # Получаем HTTP_REFERER и определяем URL для возврата
     http_referer = request.META.get('HTTP_REFERER', '')
@@ -396,6 +476,7 @@ def ad_detail(request, ad_id):
         'back_text': back_text
     })
 
+@login_required
 def update_kt_campaign_id(request, ad_id):
     logger.info(f"Вызов функции update_kt_campaign_id для ad_id={ad_id}, метод: {request.method}")
     
@@ -456,6 +537,7 @@ def update_kt_campaign_id(request, ad_id):
     # Перенаправляем на страницу детального просмотра объявления
     return redirect('dashboard:ad_detail', ad_id=ad_id)
 
+@login_required
 def update_id_acc_bd(request, ad_id):
     logger.info(f"Вызов функции update_id_acc_bd для ad_id={ad_id}, метод: {request.method}")
     
