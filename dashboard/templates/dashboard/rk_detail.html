@@ -292,6 +292,10 @@
                                     <td>{{ rk.pixel_id|default:"-" }}</td>
                                 </tr>
                                 <tr>
+                                    <th>Pixel Token</th>
+                                    <td>{{ rk.pixel_token|default:"-" }}</td>
+                                </tr>
+                                <tr>
                                     <th>Комментарий</th>
                                     <td>{{ rk.comment|default:"-" }}</td>
                                 </tr>
@@ -315,8 +319,8 @@
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить расходы РК за все время</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить AD ID</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить KT Campaign ID</button>
-                                <button class="list-group-item list-group-item-action small" disabled>Обновить PIXEL ID</button>
-                                <button class="list-group-item list-group-item-action small" disabled>Обновить Pixel Token</button>
+                                <button class="list-group-item list-group-item-action small" id="updatePixelIdBtn" data-bs-toggle="modal" data-bs-target="#updatePixelIdModal">Обновить PIXEL ID</button>
+                                <button class="list-group-item list-group-item-action small" id="updatePixelTokenBtn" data-bs-toggle="modal" data-bs-target="#updatePixelTokenModal">Обновить Pixel Token</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Загрузить конверсии в Pixel</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Добавить карту вручную</button>
                                 <button class="list-group-item list-group-item-action small" id="updateCommentBtn" data-bs-toggle="modal" data-bs-target="#updateCommentModal">Обновить комментарий</button>
@@ -415,6 +419,66 @@
     </div>
 </div>
 
+<!-- Модальное окно для обновления Pixel ID РК -->
+<div class="modal fade" id="updatePixelIdModal" tabindex="-1" aria-labelledby="updatePixelIdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updatePixelIdModalLabel">Обновить Pixel ID</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Текущий Pixel ID:</strong> 
+                    <span class="text-muted">{{ rk.pixel_id|default:"(не указан)" }}</span>
+                </div>
+                <form id="updatePixelIdForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newPixelId" class="form-label">Новый Pixel ID:</label>
+                        <input type="text" class="form-control" id="newPixelId" name="new_pixel_id" maxlength="255" placeholder="Введите новый Pixel ID..." value="{{ rk.pixel_id|default:"" }}">
+                        <div class="form-text">Максимум 255 символов</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmPixelIdUpdate">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для обновления Pixel Token РК -->
+<div class="modal fade" id="updatePixelTokenModal" tabindex="-1" aria-labelledby="updatePixelTokenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updatePixelTokenModalLabel">Обновить Pixel Token</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Текущий Pixel Token:</strong> 
+                    <span class="text-muted">{{ rk.pixel_token|default:"(не указан)" }}</span>
+                </div>
+                <form id="updatePixelTokenForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newPixelToken" class="form-label">Новый Pixel Token:</label>
+                        <textarea class="form-control" id="newPixelToken" name="new_pixel_token" rows="4" maxlength="500" placeholder="Введите новый Pixel Token...">{{ rk.pixel_token|default:"" }}</textarea>
+                        <div class="form-text">Максимум 500 символов</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmPixelTokenUpdate">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const confirmBtn = document.getElementById('confirmStatusChange');
@@ -488,6 +552,76 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             alert('Ошибка при обновлении комментария');
+        });
+    });
+    
+    // Обработчик для обновления Pixel ID
+    const confirmPixelIdBtn = document.getElementById('confirmPixelIdUpdate');
+    const pixelIdInput = document.getElementById('newPixelId');
+    
+    confirmPixelIdBtn.addEventListener('click', function() {
+        const newPixelId = pixelIdInput.value.trim();
+        
+        // Отправляем Ajax запрос для обновления Pixel ID
+        fetch("{% url 'dashboard:update_pixel_id' rk.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'new_pixel_id=' + encodeURIComponent(newPixelId)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updatePixelIdModal'));
+                modal.hide();
+                
+                // Перезагружаем страницу для отображения нового Pixel ID
+                location.reload();
+            } else {
+                alert('Ошибка при обновлении Pixel ID: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при обновлении Pixel ID');
+        });
+    });
+    
+    // Обработчик для обновления Pixel Token
+    const confirmPixelTokenBtn = document.getElementById('confirmPixelTokenUpdate');
+    const pixelTokenTextarea = document.getElementById('newPixelToken');
+    
+    confirmPixelTokenBtn.addEventListener('click', function() {
+        const newPixelToken = pixelTokenTextarea.value.trim();
+        
+        // Отправляем Ajax запрос для обновления Pixel Token
+        fetch("{% url 'dashboard:update_pixel_token' rk.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'new_pixel_token=' + encodeURIComponent(newPixelToken)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updatePixelTokenModal'));
+                modal.hide();
+                
+                // Перезагружаем страницу для отображения нового Pixel Token
+                location.reload();
+            } else {
+                alert('Ошибка при обновлении Pixel Token: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при обновлении Pixel Token');
         });
     });
 });

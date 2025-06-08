@@ -1962,3 +1962,137 @@ def update_rk_comment(request, rk_id):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+
+@csrf_exempt
+def update_pixel_id(request, rk_id):
+    """Обновляет Pixel ID рекламного кабинета в таблице rk_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Получаем новый Pixel ID из POST данных
+        new_pixel_id = request.POST.get('new_pixel_id')
+        
+        # Валидация входных данных
+        if new_pixel_id is None:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан Pixel ID'
+            })
+        
+        new_pixel_id = new_pixel_id.strip()
+        
+        # Проверяем длину Pixel ID
+        if len(new_pixel_id) > 255:
+            return JsonResponse({
+                'success': False,
+                'error': 'Pixel ID слишком длинный (максимум 255 символов)'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование РК
+            cursor.execute(
+                'SELECT id, rk_id FROM rk_data WHERE id = %s',
+                [rk_id]
+            )
+            
+            rk_data = cursor.fetchone()
+            if not rk_data:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Рекламный кабинет не найден'
+                })
+            
+            # Обновляем Pixel ID РК
+            cursor.execute(
+                'UPDATE rk_data SET pixel_id = %s WHERE id = %s',
+                [new_pixel_id, rk_id]
+            )
+            
+            if cursor.rowcount > 0:
+                logger.info(f'Pixel ID РК id={rk_id} (rk_id={rk_data[1]}) обновлен на: {new_pixel_id}')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Pixel ID успешно обновлен'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить Pixel ID'
+                })
+                
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении Pixel ID РК id={rk_id}: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
+
+
+@csrf_exempt
+def update_pixel_token(request, rk_id):
+    """Обновляет Pixel Token рекламного кабинета в таблице rk_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Получаем новый Pixel Token из POST данных
+        new_pixel_token = request.POST.get('new_pixel_token')
+        
+        # Валидация входных данных
+        if new_pixel_token is None:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан Pixel Token'
+            })
+        
+        new_pixel_token = new_pixel_token.strip()
+        
+        # Проверяем длину Pixel Token
+        if len(new_pixel_token) > 500:
+            return JsonResponse({
+                'success': False,
+                'error': 'Pixel Token слишком длинный (максимум 500 символов)'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование РК
+            cursor.execute(
+                'SELECT id, rk_id FROM rk_data WHERE id = %s',
+                [rk_id]
+            )
+            
+            rk_data = cursor.fetchone()
+            if not rk_data:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Рекламный кабинет не найден'
+                })
+            
+            # Обновляем Pixel Token РК
+            cursor.execute(
+                'UPDATE rk_data SET pixel_token = %s WHERE id = %s',
+                [new_pixel_token, rk_id]
+            )
+            
+            if cursor.rowcount > 0:
+                logger.info(f'Pixel Token РК id={rk_id} (rk_id={rk_data[1]}) обновлен на: {new_pixel_token[:50]}...')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Pixel Token успешно обновлен'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить Pixel Token'
+                })
+                
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении Pixel Token РК id={rk_id}: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
