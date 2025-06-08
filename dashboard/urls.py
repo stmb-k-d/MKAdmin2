@@ -16,6 +16,7 @@ urlpatterns = [
     path('accs/add-rk/', views.add_rk_to_account, name='add_rk_to_account'),
     path('accs/delete-rk/', views.delete_rk_from_account, name='delete_rk_from_account'),
     path('accs/update-status/', views.update_account_status, name='update_account_status'),
+    path('accs/update-token/', views.update_account_token, name='update_account_token'),
     path('rk/', views.rk_view, name='rk'),
     path('rk/<int:rk_id>/', views.rk_detail, name='rk_detail'),
     path('campaigns/', views.campaigns, name='campaigns'),

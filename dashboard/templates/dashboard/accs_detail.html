@@ -92,7 +92,7 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-grid gap-2">
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-primary" onclick="openTokenModal()">
                                             <i class="fas fa-key"></i> Изменить токен аккаунта
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -463,6 +463,33 @@
     </div>
 </div>
 
+<!-- Модальное окно для изменения токена аккаунта -->
+<div class="modal fade" id="tokenModal" tabindex="-1" aria-labelledby="tokenModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tokenModalLabel">Изменить токен аккаунта</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="tokenForm">
+                    <div class="mb-3">
+                        <label for="tokenInput" class="form-label">Введите новый токен:</label>
+                        <textarea class="form-control" id="tokenInput" name="token" rows="6" required placeholder="EAABsbCS1iHgBO4dvuaC30ZBiq7U7StraXQ5C8fAZBFyxw1gjZCf2eqnWZAlatfUNuZCmI7kNi2ZBiZAxB6f90abEfegEnNkCoENjpwe4nNZCTidYgFcZBZAEpsOxspcFYq6Yj3Dd1ZAgYvlTp1H8I0BTZABKMEVuLjuRtgS4pAboNnLAJK6joQWkg23LBblXUrDQ0aIZA0NMYtbL5h1dU7mCaKwZDZD"></textarea>
+                        <div class="form-text">Введите токен доступа для данного аккаунта (обычно очень длинная строка)</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="tokenError"></div>
+                    <div class="alert alert-success d-none" id="tokenSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateAccountToken()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Модальное окно для изменения статуса аккаунта -->
 <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -797,6 +824,73 @@ function showStatusSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('statusError').classList.add('d-none');
+}
+
+function openTokenModal() {
+    document.getElementById('tokenInput').value = '';
+    document.getElementById('tokenError').classList.add('d-none');
+    document.getElementById('tokenSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('tokenModal'));
+    modal.show();
+}
+
+function updateAccountToken() {
+    const tokenInput = document.getElementById('tokenInput');
+    const newToken = tokenInput.value.trim();
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!newToken) {
+        showTokenError('Пожалуйста, введите токен.');
+        return;
+    }
+    
+    if (newToken.length < 50) {
+        showTokenError('Токен кажется слишком коротким. Проверьте правильность.');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-token/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'token': newToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showTokenSuccess('Токен аккаунта успешно обновлен!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showTokenError(data.error || 'Произошла ошибка при обновлении токена.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showTokenError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showTokenError(message) {
+    const errorEl = document.getElementById('tokenError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('tokenSuccess').classList.add('d-none');
+}
+
+function showTokenSuccess(message) {
+    const successEl = document.getElementById('tokenSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('tokenError').classList.add('d-none');
 }
 
 function getCookie(name) {
