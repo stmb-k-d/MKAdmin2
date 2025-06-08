@@ -54,7 +54,7 @@
                                         <button class="btn btn-outline-primary" disabled>
                                             <i class="fas fa-edit"></i> Изменить Fan Page аккаунта
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-primary" onclick="openStatusModal()">
                                             <i class="fas fa-toggle-on"></i> Изменить статус аккаунта
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -463,6 +463,38 @@
     </div>
 </div>
 
+<!-- Модальное окно для изменения статуса аккаунта -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Изменить статус аккаунта</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="statusForm">
+                    <div class="mb-3">
+                        <label for="statusSelect" class="form-label">Выберите новый статус:</label>
+                        <select class="form-select" id="statusSelect" name="status" required>
+                            <option value="">-- Выберите статус --</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="PendingUnban">PendingUnban</option>
+                            <option value="BAN">BAN</option>
+                        </select>
+                        <div class="form-text">Выберите новый статус для данного аккаунта</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="statusError"></div>
+                    <div class="alert alert-success d-none" id="statusSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateAccountStatus()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function openProxyIdModal() {
     document.getElementById('proxyIdInput').value = '{{ account.proxy_id|default:"" }}';
@@ -703,6 +735,68 @@ function showDeleteRkSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('deleteRkError').classList.add('d-none');
+}
+
+function openStatusModal() {
+    document.getElementById('statusSelect').value = '{{ account.status|default:"" }}';
+    document.getElementById('statusError').classList.add('d-none');
+    document.getElementById('statusSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    modal.show();
+}
+
+function updateAccountStatus() {
+    const statusSelect = document.getElementById('statusSelect');
+    const newStatus = statusSelect.value;
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!newStatus) {
+        showStatusError('Пожалуйста, выберите статус.');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-status/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'status': newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatusSuccess('Статус аккаунта успешно обновлен!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showStatusError(data.error || 'Произошла ошибка при обновлении статуса.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showStatusError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showStatusError(message) {
+    const errorEl = document.getElementById('statusError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('statusSuccess').classList.add('d-none');
+}
+
+function showStatusSuccess(message) {
+    const successEl = document.getElementById('statusSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('statusError').classList.add('d-none');
 }
 
 function getCookie(name) {

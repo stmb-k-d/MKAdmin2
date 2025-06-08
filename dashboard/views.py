@@ -1392,3 +1392,73 @@ def delete_rk_from_account(request):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+def update_account_status(request):
+    """Обновляет статус аккаунта в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        new_status = data.get('status')
+        
+        # Валидация входных данных
+        if not account_id or not new_status:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта или статус'
+            })
+        
+        # Проверяем, что статус корректный
+        allowed_statuses = ['ACTIVE', 'PendingUnban', 'BAN']
+        if new_status not in allowed_statuses:
+            return JsonResponse({
+                'success': False,
+                'error': 'Некорректный статус. Разрешены: ACTIVE, PendingUnban, BAN'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта
+            cursor.execute(
+                'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            if not cursor.fetchone():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            # Обновляем статус аккаунта
+            cursor.execute(
+                'UPDATE accs_data SET status = %s WHERE id_acc_bd = %s',
+                [new_status, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Статус аккаунта успешно изменен на {new_status}'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить статус аккаунта'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении статуса аккаунта: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
