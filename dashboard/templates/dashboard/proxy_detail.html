@@ -10,9 +10,11 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Информация о прокси</h5>
         <div>
-            <button class="btn btn-outline-danger me-2" disabled>
+            {% if proxy %}
+            <button class="btn btn-outline-danger me-2" id="deleteProxyBtn" data-proxy-id="{{ proxy.proxy_id }}">
                 <i class="fas fa-trash"></i> Удалить прокси
             </button>
+            {% endif %}
             <a href="{% url 'dashboard:proxy' %}" class="btn btn-outline-primary">
                 <i class="fas fa-arrow-left"></i> Назад к списку
             </a>
@@ -132,4 +134,81 @@
         {% endif %}
     </div>
 </div>
+
+{% if proxy %}
+<!-- Modal для подтверждения удаления -->
+<div class="modal fade" id="deleteProxyModal" tabindex="-1" aria-labelledby="deleteProxyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteProxyModalLabel">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить эту прокси?</p>
+                <p><strong>IP:</strong> {{ proxy.ip }}</p>
+                <p class="text-muted">Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Да, удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('deleteProxyBtn');
+    const deleteModalElement = document.getElementById('deleteProxyModal');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    
+    if (deleteBtn && deleteModalElement) {
+        const deleteModal = new bootstrap.Modal(deleteModalElement);
+        
+        deleteBtn.addEventListener('click', function() {
+            deleteModal.show();
+        });
+        
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                const proxyId = deleteBtn.getAttribute('data-proxy-id');
+                
+                // Показываем индикатор загрузки
+                confirmDeleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Удаление...';
+                confirmDeleteBtn.disabled = true;
+                
+                // Отправляем AJAX запрос
+                fetch(`/proxy/delete/${proxyId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Успешное удаление - перенаправляем на список прокси
+                        window.location.href = "{% url 'dashboard:proxy' %}";
+                    } else {
+                        // Показываем ошибку
+                        alert('Ошибка при удалении: ' + data.error);
+                        confirmDeleteBtn.innerHTML = 'Да, удалить';
+                        confirmDeleteBtn.disabled = false;
+                        deleteModal.hide();
+                    }
+                })
+                .catch(error => {
+                    alert('Произошла ошибка: ' + error.message);
+                    confirmDeleteBtn.innerHTML = 'Да, удалить';
+                    confirmDeleteBtn.disabled = false;
+                    deleteModal.hide();
+                });
+            });
+        }
+    }
+});
+</script>
 {% endblock %} 

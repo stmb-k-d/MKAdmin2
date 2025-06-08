@@ -84,12 +84,21 @@ def check_proxy(request, proxy_id):
         return JsonResponse({'success': False, 'error': 'Прокси не найден'})
 
 def delete_proxy(request, proxy_id):
-    try:
-        proxy = Proxy.objects.get(id=proxy_id)
-        proxy.delete()
-        return JsonResponse({'success': True})
-    except Proxy.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Прокси не найден'})
+    if request.method == 'POST':
+        try:
+            with connection.cursor() as cursor:
+                # Проверяем существование прокси
+                cursor.execute("SELECT proxy_id FROM proxy_data WHERE proxy_id = %s", [proxy_id])
+                if cursor.fetchone():
+                    # Удаляем прокси
+                    cursor.execute("DELETE FROM proxy_data WHERE proxy_id = %s", [proxy_id])
+                    return JsonResponse({'success': True, 'message': 'Прокси успешно удален'})
+                else:
+                    return JsonResponse({'success': False, 'error': 'Прокси не найден'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Ошибка при удалении: {str(e)}'})
+    else:
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
 
 def count_free_proxies(request):
     with connection.cursor() as cursor:
