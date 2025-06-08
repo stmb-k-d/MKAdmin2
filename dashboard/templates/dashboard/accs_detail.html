@@ -126,7 +126,7 @@
                                         <button class="btn btn-outline-primary" onclick="openDopCommentModal()">
                                             <i class="fas fa-comment"></i> Изменить дополнительный комментарий
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-primary" onclick="openPasswordModal()">
                                             <i class="fas fa-lock"></i> Изменить пароль аккаунта
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -571,6 +571,33 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" onclick="updateDopComment()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для изменения пароля аккаунта -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passwordModalLabel">Изменить пароль аккаунта</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordForm">
+                    <div class="mb-3">
+                        <label for="passwordInput" class="form-label">Введите новый пароль:</label>
+                        <input type="text" class="form-control" id="passwordInput" name="password" placeholder="Введите новый пароль для аккаунта">
+                        <div class="form-text">Новый пароль для доступа к аккаунту</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="passwordError"></div>
+                    <div class="alert alert-success d-none" id="passwordSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateAccountPassword()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -1069,6 +1096,73 @@ function showDopCommentSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('dopCommentError').classList.add('d-none');
+}
+
+function openPasswordModal() {
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordError').classList.add('d-none');
+    document.getElementById('passwordSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+    modal.show();
+}
+
+function updateAccountPassword() {
+    const passwordInput = document.getElementById('passwordInput');
+    const newPassword = passwordInput.value.trim();
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!newPassword) {
+        showPasswordError('Пожалуйста, введите пароль.');
+        return;
+    }
+    
+    if (newPassword.length > 255) {
+        showPasswordError('Пароль слишком длинный (максимум 255 символов).');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-password/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'password': newPassword
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showPasswordSuccess('Пароль аккаунта успешно обновлен!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showPasswordError(data.error || 'Произошла ошибка при обновлении пароля.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPasswordError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showPasswordError(message) {
+    const errorEl = document.getElementById('passwordError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('passwordSuccess').classList.add('d-none');
+}
+
+function showPasswordSuccess(message) {
+    const successEl = document.getElementById('passwordSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('passwordError').classList.add('d-none');
 }
 
 function getCookie(name) {
