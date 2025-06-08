@@ -184,9 +184,13 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <h5 class="mb-0 me-3">Управление креативами</h5>
-            <div class="form-check form-switch">
+            <div class="form-check form-switch me-3">
                 <input class="form-check-input" type="checkbox" id="showActiveOnly" role="switch">
                 <label class="form-check-label" for="showActiveOnly">Активные</label>
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="selectAllRows" role="switch">
+                <label class="form-check-label" for="selectAllRows">Выбрать все</label>
             </div>
         </div>
         <div class="d-flex">
@@ -201,6 +205,11 @@
             <div class="column-buttons">
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
                     <i class="fas fa-columns"></i> Настроить колонки
+                </button>
+            </div>
+            <div class="me-2">
+                <button type="button" class="btn btn-success btn-sm d-none" id="bulkEditBtn" data-bs-toggle="modal" data-bs-target="#bulkEditModal">
+                    <i class="fas fa-edit"></i> Редактировать группу (<span id="selectedCount">0</span>)
                 </button>
             </div>
             <div class="ms-2">
@@ -286,6 +295,44 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="applyFiltersBtn" data-bs-dismiss="modal">Применить фильтры</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для группового редактирования -->
+<div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEditModalLabel">Групповое редактирование креативов</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="bulkEditForm" method="post" action="{% url 'dashboard:bulk_update_ads' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        Выбрано креативов: <strong id="bulkSelectedCount">0</strong>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bulkEditParameter" class="form-label">Параметр для изменения</label>
+                        <select class="form-select" id="bulkEditParameter" name="parameter" required>
+                            <option value="">- Выберите параметр -</option>
+                            <option value="id_acc_bd">id_acc_bd</option>
+                            <option value="kt_campaign_id">kt_campaign_id</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bulkEditValue" class="form-label">Новое значение</label>
+                        <input type="number" class="form-control" id="bulkEditValue" name="value" required>
+                        <div class="form-text">Должно быть целое число</div>
+                    </div>
+                    <input type="hidden" id="selectedAdIds" name="ad_ids">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Применить изменения</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -434,6 +481,12 @@ $(document).ready(function() {
         headerRow.empty();
         tableBody.empty();
         
+        // Добавляем чекбокс в первую колонку
+        const checkboxTh = $('<th>')
+            .css('width', '40px')
+            .html('<input type="checkbox" id="selectAllTable" title="Выбрать все видимые">');
+        headerRow.append(checkboxTh);
+        
         // Добавляем заголовки колонок
         selectedColumns.forEach(function(column) {
             const th = $('<th>')
@@ -447,7 +500,7 @@ $(document).ready(function() {
             // Если данных нет, выводим сообщение
             const row = $('<tr>');
             const cell = $('<td>')
-                .attr('colspan', selectedColumns.length)
+                .attr('colspan', selectedColumns.length + 1) // +1 для колонки с чекбоксом
                 .addClass('text-center')
                 .text('Нет данных для отображения');
             row.append(cell);
@@ -481,6 +534,12 @@ $(document).ready(function() {
         // Добавляем строки с данными
         filteredData.forEach(function(ad) {
             const tr = $('<tr>').attr('onclick', 'highlightRow(this, event)');
+            
+            // Добавляем чекбокс в первую колонку
+            const checkboxTd = $('<td>')
+                .css('text-align', 'center')
+                .html('<input type="checkbox" class="row-checkbox" value="' + ad.ad_id + '" onclick="event.stopPropagation();">');
+            tr.append(checkboxTd);
             
             selectedColumns.forEach(function(column) {
                 const td = $('<td>');
@@ -1007,6 +1066,70 @@ $(document).ready(function() {
             // Если нет активных фильтров, добавляем пустой фильтр
             addFilter();
         }
+    });
+    
+    // Обработчики для чекбоксов группового выбора
+    function updateSelectedCount() {
+        const checkedBoxes = $('.row-checkbox:checked');
+        const count = checkedBoxes.length;
+        $('#selectedCount').text(count);
+        $('#bulkSelectedCount').text(count);
+        
+        if (count > 0) {
+            $('#bulkEditBtn').removeClass('d-none');
+        } else {
+            $('#bulkEditBtn').addClass('d-none');
+        }
+    }
+    
+    // Обработчик тумблера "Выбрать все" в заголовке
+    $(document).on('change', '#selectAllRows', function() {
+        const isChecked = $(this).is(':checked');
+        $('.row-checkbox').prop('checked', isChecked);
+        $('#selectAllTable').prop('checked', isChecked);
+        updateSelectedCount();
+    });
+    
+    // Обработчик чекбокса "Выбрать все видимые" в таблице
+    $(document).on('change', '#selectAllTable', function() {
+        const isChecked = $(this).is(':checked');
+        $('.row-checkbox').prop('checked', isChecked);
+        $('#selectAllRows').prop('checked', isChecked);
+        updateSelectedCount();
+    });
+    
+    // Обработчик индивидуальных чекбоксов
+    $(document).on('change', '.row-checkbox', function() {
+        const totalVisible = $('.row-checkbox').length;
+        const checkedVisible = $('.row-checkbox:checked').length;
+        
+        // Обновляем состояние чекбокса "Выбрать все"
+        $('#selectAllTable').prop('checked', checkedVisible === totalVisible);
+        $('#selectAllRows').prop('checked', checkedVisible === totalVisible);
+        
+        updateSelectedCount();
+    });
+    
+    // Обработчик отправки формы группового редактирования
+    $('#bulkEditForm').on('submit', function(e) {
+        const selectedIds = $('.row-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+        
+        if (selectedIds.length === 0) {
+            e.preventDefault();
+            alert('Выберите хотя бы один креатив для редактирования');
+            return false;
+        }
+        
+        $('#selectedAdIds').val(selectedIds.join(','));
+        console.log('Отправляем IDs:', selectedIds);
+    });
+    
+    // Сброс чекбоксов при закрытии модального окна
+    $('#bulkEditModal').on('hidden.bs.modal', function() {
+        $('#bulkEditParameter').val('');
+        $('#bulkEditValue').val('');
     });
 });
 </script>

@@ -528,6 +528,136 @@ def update_id_acc_bd(request, ad_id):
     # Перенаправляем на страницу детального просмотра объявления
     return redirect('dashboard:ad_detail', ad_id=ad_id)
 
+def bulk_update_ads(request):
+    """
+    Функция для группового обновления параметров креативов
+    """
+    logger.info(f"Вызов функции bulk_update_ads, метод: {request.method}")
+    
+    if request.method == 'POST':
+        parameter = request.POST.get('parameter', '').strip()
+        value = request.POST.get('value', '').strip()
+        ad_ids_str = request.POST.get('ad_ids', '').strip()
+        
+        logger.info(f"Получены параметры: parameter={parameter}, value={value}, ad_ids={ad_ids_str}")
+        
+        # Валидация входных данных
+        if not parameter or not value or not ad_ids_str:
+            messages.error(request, 'Все поля должны быть заполнены')
+            return redirect('dashboard:ads')
+        
+        # Проверяем допустимые параметры
+        allowed_parameters = ['id_acc_bd', 'kt_campaign_id']
+        if parameter not in allowed_parameters:
+            messages.error(request, f'Недопустимый параметр: {parameter}')
+            return redirect('dashboard:ads')
+        
+        # Парсим список ID объявлений
+        try:
+            ad_ids = [ad_id.strip() for ad_id in ad_ids_str.split(',') if ad_id.strip()]
+            if not ad_ids:
+                messages.error(request, 'Не выбраны объявления для обновления')
+                return redirect('dashboard:ads')
+        except Exception as e:
+            logger.error(f"Ошибка при парсинге ad_ids: {str(e)}")
+            messages.error(request, 'Ошибка в формате списка объявлений')
+            return redirect('dashboard:ads')
+        
+        # Проверяем, что значение - целое число
+        try:
+            new_value = int(value)
+            logger.info(f"Успешно преобразовано в int: {new_value}")
+        except ValueError:
+            messages.error(request, f'{parameter} должен быть целым числом')
+            return redirect('dashboard:ads')
+        
+        # Выполняем обновление в базе данных
+        try:
+            with connection.cursor() as cursor:
+                # Начинаем транзакцию
+                connection.set_autocommit(False)
+                
+                updated_count = 0
+                
+                # Дополнительная валидация для id_acc_bd
+                if parameter == 'id_acc_bd':
+                    # Проверяем существование аккаунта с указанным id_acc_bd
+                    cursor.execute(
+                        'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                        [new_value]
+                    )
+                    account_exists = cursor.fetchone()
+                    
+                    if not account_exists:
+                        connection.set_autocommit(True)
+                        messages.error(request, f'Аккаунт с id_acc_bd={new_value} не существует')
+                        return redirect('dashboard:ads')
+                
+                # Обновляем каждое объявление
+                for ad_id in ad_ids:
+                    # Проверяем существование объявления
+                    cursor.execute(
+                        'SELECT ad_id FROM ad_data WHERE ad_id = %s',
+                        [ad_id]
+                    )
+                    ad_exists = cursor.fetchone()
+                    
+                    if ad_exists:
+                        # Обновляем в основной таблице ad_data
+                        if parameter == 'id_acc_bd':
+                            cursor.execute(
+                                'UPDATE ad_data SET id_acc_bd = %s WHERE ad_id = %s',
+                                [new_value, ad_id]
+                            )
+                        elif parameter == 'kt_campaign_id':
+                            cursor.execute(
+                                'UPDATE ad_data SET kt_campaign_id = %s WHERE ad_id = %s',
+                                [new_value, ad_id]
+                            )
+                        
+                        # Обновляем в таблице ежедневной статистики ad_data_daily
+                        if parameter == 'id_acc_bd':
+                            cursor.execute(
+                                'UPDATE ad_data_daily SET id_acc_bd = %s WHERE ad_id = %s',
+                                [new_value, ad_id]
+                            )
+                        elif parameter == 'kt_campaign_id':
+                            cursor.execute(
+                                'UPDATE ad_data_daily SET kt_campaign_id = %s WHERE ad_id = %s',
+                                [new_value, ad_id]
+                            )
+                        
+                        updated_count += 1
+                        logger.info(f"{parameter} для объявления {ad_id} обновлен на {new_value}")
+                    else:
+                        logger.warning(f"Объявление {ad_id} не найдено в базе данных")
+                
+                # Фиксируем транзакцию
+                connection.commit()
+                
+                # Логируем успешное обновление
+                logger.info(f"Групповое обновление завершено. Обновлено {updated_count} из {len(ad_ids)} объявлений")
+                
+                # Добавляем сообщение об успешном обновлении
+                if updated_count > 0:
+                    messages.success(request, f'Успешно обновлено {updated_count} объявлений. {parameter} установлен в {new_value}')
+                else:
+                    messages.warning(request, 'Ни одно объявление не было обновлено')
+                
+                # Восстанавливаем автокоммит
+                connection.set_autocommit(True)
+                
+        except Exception as e:
+            # В случае ошибки откатываем транзакцию и логируем ошибку
+            connection.rollback()
+            connection.set_autocommit(True)
+            
+            logger.error(f"Ошибка при групповом обновлении: {str(e)}")
+            messages.error(request, f'Ошибка при групповом обновлении: {str(e)}')
+    
+    # Перенаправляем на страницу списка объявлений
+    return redirect('dashboard:ads')
+
 def working_log(request):
     try:
         # Получаем параметр поиска из запроса
