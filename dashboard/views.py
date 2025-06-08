@@ -3,6 +3,7 @@ from django.db import connection
 from .models import MenuItem, Campaign, AdSet, Ad, Proxy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 import json
 import sys
 from datetime import datetime, timedelta
@@ -1128,3 +1129,74 @@ def update_kpi(request, kpi_id):
         messages.error(request, f'Ошибка при обновлении: {exc}')
 
     return redirect('dashboard:kpi')
+
+@csrf_exempt
+def update_proxy_id(request):
+    """Обновляет proxy_id для аккаунта в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        proxy_id = data.get('proxy_id')
+        
+        # Валидация входных данных
+        if not account_id or proxy_id is None:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта или Proxy ID'
+            })
+        
+        # Проверяем что proxy_id является числом
+        try:
+            proxy_id = int(proxy_id)
+        except (ValueError, TypeError):
+            return JsonResponse({
+                'success': False,
+                'error': 'Proxy ID должен быть числом'
+            })
+        
+        # Обновляем proxy_id в базе данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта
+            cursor.execute(
+                'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            if not cursor.fetchone():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            # Обновляем proxy_id
+            cursor.execute(
+                'UPDATE accs_data SET proxy_id = %s WHERE id_acc_bd = %s',
+                [proxy_id, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Proxy ID успешно обновлен на {proxy_id}'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить Proxy ID'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении proxy_id: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })

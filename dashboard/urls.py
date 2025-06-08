@@ -12,6 +12,7 @@ urlpatterns = [
     path('proxy/count-free/', views.count_free_proxies, name='count_free_proxies'),
     path('accs/', views.accs_view, name='accs'),
     path('accs/<int:account_id>/', views.accs_detail, name='accs_detail'),
+    path('accs/update-proxy-id/', views.update_proxy_id, name='update_proxy_id'),
     path('rk/', views.rk_view, name='rk'),
     path('rk/<int:rk_id>/', views.rk_detail, name='rk_detail'),
     path('campaigns/', views.campaigns, name='campaigns'),

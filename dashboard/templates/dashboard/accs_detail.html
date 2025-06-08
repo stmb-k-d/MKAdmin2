@@ -101,9 +101,12 @@
                                         <button class="btn btn-outline-primary" disabled>
                                             <i class="fas fa-bullhorn"></i> Изменить KT Campaign ID
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
-                                            <i class="fas fa-toggle-on"></i> Не уникальные клики в KT
-                                        </button>
+                                                                <button class="btn btn-outline-primary" disabled>
+                            <i class="fas fa-toggle-on"></i> Не уникальные клики в KT
+                        </button>
+                        <button class="btn btn-outline-success" onclick="openProxyIdModal()">
+                            <i class="fas fa-globe"></i> Изменить Proxy ID
+                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -349,4 +352,111 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Модальное окно для изменения Proxy ID -->
+<div class="modal fade" id="proxyIdModal" tabindex="-1" aria-labelledby="proxyIdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="proxyIdModalLabel">Изменить Proxy ID</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="proxyIdForm">
+                    <div class="mb-3">
+                        <label for="proxyIdInput" class="form-label">Введите новый Proxy ID:</label>
+                        <input type="number" class="form-control" id="proxyIdInput" name="proxy_id" required>
+                        <div class="form-text">Введите числовой ID прокси для данного аккаунта</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="proxyIdError"></div>
+                    <div class="alert alert-success d-none" id="proxyIdSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateProxyId()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openProxyIdModal() {
+    document.getElementById('proxyIdInput').value = '{{ account.proxy_id|default:"" }}';
+    document.getElementById('proxyIdError').classList.add('d-none');
+    document.getElementById('proxyIdSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('proxyIdModal'));
+    modal.show();
+}
+
+function updateProxyId() {
+    const proxyIdInput = document.getElementById('proxyIdInput');
+    const proxyId = proxyIdInput.value;
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!proxyId || isNaN(proxyId)) {
+        showError('Пожалуйста, введите корректный числовой ID прокси.');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-proxy-id/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'proxy_id': parseInt(proxyId)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('Proxy ID успешно обновлен!');
+            // Обновляем значение в таблице
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showError(data.error || 'Произошла ошибка при обновлении Proxy ID.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showError(message) {
+    const errorEl = document.getElementById('proxyIdError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('proxyIdSuccess').classList.add('d-none');
+}
+
+function showSuccess(message) {
+    const successEl = document.getElementById('proxyIdSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('proxyIdError').classList.add('d-none');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
 {% endblock %} 
