@@ -20,6 +20,7 @@ urlpatterns = [
     path('accs/update-fbt-acc-id/', views.update_fbt_acc_id, name='update_fbt_acc_id'),
     path('accs/update-dop-comment/', views.update_dop_comment, name='update_dop_comment'),
     path('accs/update-password/', views.update_account_password, name='update_account_password'),
+    path('accs/update-email-password/', views.update_email_password, name='update_email_password'),
     path('rk/', views.rk_view, name='rk'),
     path('rk/<int:rk_id>/', views.rk_detail, name='rk_detail'),
     path('campaigns/', views.campaigns, name='campaigns'),

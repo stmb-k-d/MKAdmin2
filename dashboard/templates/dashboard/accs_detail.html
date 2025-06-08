@@ -129,7 +129,7 @@
                                         <button class="btn btn-outline-primary" onclick="openPasswordModal()">
                                             <i class="fas fa-lock"></i> Изменить пароль аккаунта
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-primary" onclick="openEmailPasswordModal()">
                                             <i class="fas fa-envelope"></i> Изменить пароль от Email
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -598,6 +598,33 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" onclick="updateAccountPassword()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для изменения пароля от email -->
+<div class="modal fade" id="emailPasswordModal" tabindex="-1" aria-labelledby="emailPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailPasswordModalLabel">Изменить пароль от Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="emailPasswordForm">
+                    <div class="mb-3">
+                        <label for="emailPasswordInput" class="form-label">Введите новый пароль от email:</label>
+                        <input type="text" class="form-control" id="emailPasswordInput" name="email_password" placeholder="Введите новый пароль от email">
+                        <div class="form-text">Новый пароль для доступа к email аккаунта</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="emailPasswordError"></div>
+                    <div class="alert alert-success d-none" id="emailPasswordSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateEmailPassword()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -1163,6 +1190,73 @@ function showPasswordSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('passwordError').classList.add('d-none');
+}
+
+function openEmailPasswordModal() {
+    document.getElementById('emailPasswordInput').value = '';
+    document.getElementById('emailPasswordError').classList.add('d-none');
+    document.getElementById('emailPasswordSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('emailPasswordModal'));
+    modal.show();
+}
+
+function updateEmailPassword() {
+    const emailPasswordInput = document.getElementById('emailPasswordInput');
+    const newEmailPassword = emailPasswordInput.value.trim();
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!newEmailPassword) {
+        showEmailPasswordError('Пожалуйста, введите пароль от email.');
+        return;
+    }
+    
+    if (newEmailPassword.length > 255) {
+        showEmailPasswordError('Пароль от email слишком длинный (максимум 255 символов).');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-email-password/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'email_password': newEmailPassword
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showEmailPasswordSuccess('Пароль от email успешно обновлен!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showEmailPasswordError(data.error || 'Произошла ошибка при обновлении пароля от email.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showEmailPasswordError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showEmailPasswordError(message) {
+    const errorEl = document.getElementById('emailPasswordError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('emailPasswordSuccess').classList.add('d-none');
+}
+
+function showEmailPasswordSuccess(message) {
+    const successEl = document.getElementById('emailPasswordSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('emailPasswordError').classList.add('d-none');
 }
 
 function getCookie(name) {

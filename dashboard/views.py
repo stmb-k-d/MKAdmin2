@@ -1751,3 +1751,80 @@ def update_account_password(request):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+def update_email_password(request):
+    """Обновляет пароль от email в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        new_email_password = data.get('email_password')
+        
+        # Валидация входных данных
+        if not account_id or not new_email_password:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта или пароль от email'
+            })
+        
+        new_email_password = new_email_password.strip()
+        
+        # Базовая валидация пароля
+        if len(new_email_password) < 1:
+            return JsonResponse({
+                'success': False,
+                'error': 'Пароль от email не может быть пустым'
+            })
+        
+        if len(new_email_password) > 255:
+            return JsonResponse({
+                'success': False,
+                'error': 'Пароль от email слишком длинный (максимум 255 символов)'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта
+            cursor.execute(
+                'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            if not cursor.fetchone():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            # Обновляем пароль от email
+            cursor.execute(
+                'UPDATE accs_data SET email_psw = %s WHERE id_acc_bd = %s',
+                [new_email_password, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Пароль от email успешно обновлен'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить пароль от email'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении пароля от email: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
