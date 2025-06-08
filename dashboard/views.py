@@ -1895,3 +1895,70 @@ def update_rk_status(request, rk_id):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+
+@csrf_exempt
+def update_rk_comment(request, rk_id):
+    """Обновляет комментарий рекламного кабинета в таблице rk_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Получаем новый комментарий из POST данных
+        new_comment = request.POST.get('new_comment')
+        
+        # Валидация входных данных
+        if new_comment is None:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан комментарий'
+            })
+        
+        new_comment = new_comment.strip()
+        
+        # Проверяем длину комментария
+        if len(new_comment) > 500:
+            return JsonResponse({
+                'success': False,
+                'error': 'Комментарий слишком длинный (максимум 500 символов)'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование РК
+            cursor.execute(
+                'SELECT id, rk_id FROM rk_data WHERE id = %s',
+                [rk_id]
+            )
+            
+            rk_data = cursor.fetchone()
+            if not rk_data:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Рекламный кабинет не найден'
+                })
+            
+            # Обновляем комментарий РК
+            cursor.execute(
+                'UPDATE rk_data SET comment = %s WHERE id = %s',
+                [new_comment, rk_id]
+            )
+            
+            if cursor.rowcount > 0:
+                logger.info(f'Комментарий РК id={rk_id} (rk_id={rk_data[1]}) обновлен: {new_comment[:50]}...')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Комментарий РК успешно обновлен'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить комментарий РК'
+                })
+                
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении комментария РК id={rk_id}: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })

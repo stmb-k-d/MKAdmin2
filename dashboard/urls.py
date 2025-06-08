@@ -24,6 +24,7 @@ urlpatterns = [
     path('rk/', views.rk_view, name='rk'),
     path('rk/<int:rk_id>/', views.rk_detail, name='rk_detail'),
     path('rk/update-status/<int:rk_id>/', views.update_rk_status, name='update_rk_status'),
+    path('rk/update-comment/<int:rk_id>/', views.update_rk_comment, name='update_rk_comment'),
     path('campaigns/', views.campaigns, name='campaigns'),
     path('adsets/', views.adsets, name='adsets'),
     path('ads/', views.ads, name='ads'),

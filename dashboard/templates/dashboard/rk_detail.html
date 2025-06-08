@@ -319,7 +319,7 @@
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить Pixel Token</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Загрузить конверсии в Pixel</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Добавить карту вручную</button>
-                                <button class="list-group-item list-group-item-action small" disabled>Обновить комментарий</button>
+                                <button class="list-group-item list-group-item-action small" id="updateCommentBtn" data-bs-toggle="modal" data-bs-target="#updateCommentModal">Обновить комментарий</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Залить</button>
                             </div>
                         </div>
@@ -385,6 +385,36 @@
     </div>
 </div>
 
+<!-- Модальное окно для обновления комментария РК -->
+<div class="modal fade" id="updateCommentModal" tabindex="-1" aria-labelledby="updateCommentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateCommentModalLabel">Обновить комментарий РК</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Текущий комментарий:</strong> 
+                    <span class="text-muted">{{ rk.comment|default:"(не указан)" }}</span>
+                </div>
+                <form id="updateCommentForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newComment" class="form-label">Новый комментарий:</label>
+                        <textarea class="form-control" id="newComment" name="new_comment" rows="4" maxlength="500" placeholder="Введите новый комментарий...">{{ rk.comment|default:"" }}</textarea>
+                        <div class="form-text">Максимум 500 символов</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmCommentUpdate">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const confirmBtn = document.getElementById('confirmStatusChange');
@@ -423,6 +453,41 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             alert('Ошибка при обновлении статуса');
+        });
+    });
+    
+    // Обработчик для обновления комментария
+    const confirmCommentBtn = document.getElementById('confirmCommentUpdate');
+    const commentTextarea = document.getElementById('newComment');
+    
+    confirmCommentBtn.addEventListener('click', function() {
+        const newComment = commentTextarea.value.trim();
+        
+        // Отправляем Ajax запрос для обновления комментария
+        fetch("{% url 'dashboard:update_rk_comment' rk.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'new_comment=' + encodeURIComponent(newComment)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateCommentModal'));
+                modal.hide();
+                
+                // Перезагружаем страницу для отображения нового комментария
+                location.reload();
+            } else {
+                alert('Ошибка при обновлении комментария: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при обновлении комментария');
         });
     });
 });
