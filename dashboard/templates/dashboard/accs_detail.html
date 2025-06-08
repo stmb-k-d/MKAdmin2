@@ -29,7 +29,7 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-grid gap-2">
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-success" onclick="openAddRkModal()">
                                             <i class="fas fa-plus"></i> Добавить РК к аккаунту
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -380,6 +380,33 @@
     </div>
 </div>
 
+<!-- Модальное окно для добавления РК -->
+<div class="modal fade" id="addRkModal" tabindex="-1" aria-labelledby="addRkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRkModalLabel">Добавить РК к аккаунту</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRkForm">
+                    <div class="mb-3">
+                        <label for="rkIdInput" class="form-label">Введите РК ID:</label>
+                        <input type="text" class="form-control" id="rkIdInput" name="rk_id" required>
+                        <div class="form-text">Введите ID рекламного кабинета для добавления к аккаунту</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="addRkError"></div>
+                    <div class="alert alert-success d-none" id="addRkSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" onclick="addRkToAccount()">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function openProxyIdModal() {
     document.getElementById('proxyIdInput').value = '{{ account.proxy_id|default:"" }}';
@@ -441,6 +468,68 @@ function showSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('proxyIdError').classList.add('d-none');
+}
+
+function openAddRkModal() {
+    document.getElementById('rkIdInput').value = '';
+    document.getElementById('addRkError').classList.add('d-none');
+    document.getElementById('addRkSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('addRkModal'));
+    modal.show();
+}
+
+function addRkToAccount() {
+    const rkIdInput = document.getElementById('rkIdInput');
+    const rkId = rkIdInput.value.trim();
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!rkId) {
+        showAddRkError('Пожалуйста, введите РК ID.');
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/add-rk/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'rk_id': rkId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAddRkSuccess('РК успешно добавлен к аккаунту!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showAddRkError(data.error || 'Произошла ошибка при добавлении РК.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAddRkError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showAddRkError(message) {
+    const errorEl = document.getElementById('addRkError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('addRkSuccess').classList.add('d-none');
+}
+
+function showAddRkSuccess(message) {
+    const successEl = document.getElementById('addRkSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('addRkError').classList.add('d-none');
 }
 
 function getCookie(name) {

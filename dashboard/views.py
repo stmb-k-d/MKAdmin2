@@ -134,6 +134,17 @@ def accs_detail(request, account_id):
         row = cursor.fetchone()
         if row:
             account = dict(zip(columns, row))
+            # Обрабатываем rk_list если оно существует
+            if account.get('rk_list'):
+                try:
+                    # Если rk_list - это строка JSON, парсим её
+                    if isinstance(account['rk_list'], str):
+                        account['rk_list'] = json.loads(account['rk_list'])
+                    # Если это уже список, оставляем как есть
+                    elif not isinstance(account['rk_list'], list):
+                        account['rk_list'] = None
+                except (json.JSONDecodeError, TypeError):
+                    account['rk_list'] = None
         else:
             account = None
 
@@ -1196,6 +1207,89 @@ def update_proxy_id(request):
         })
     except Exception as e:
         logger.exception(f'Ошибка при обновлении proxy_id: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
+
+@csrf_exempt
+def add_rk_to_account(request):
+    """Добавляет РК ID в список rk_list для аккаунта в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        rk_id = data.get('rk_id')
+        
+        # Валидация входных данных
+        if not account_id or not rk_id:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта или РК ID'
+            })
+        
+        rk_id = str(rk_id).strip()
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта и получаем текущий rk_list
+            cursor.execute(
+                'SELECT id_acc_bd, rk_list FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            row = cursor.fetchone()
+            if not row:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            current_rk_list = row[1]  # Получаем текущий rk_list
+            
+            # Обрабатываем rk_list
+            if current_rk_list is None:
+                # Если rk_list пустой, создаем новый список
+                new_rk_list = [[rk_id, 'NEW']]
+            else:
+                # Если rk_list уже существует, проверяем, нет ли уже такого РК
+                rk_ids = [rk[0] for rk in current_rk_list if len(rk) > 0]
+                if rk_id in rk_ids:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Этот РК уже добавлен к аккаунту'
+                    })
+                
+                # Добавляем новый РК к существующему списку
+                new_rk_list = current_rk_list + [[rk_id, 'NEW']]
+            
+            # Обновляем rk_list в базе данных
+            cursor.execute(
+                'UPDATE accs_data SET rk_list = %s WHERE id_acc_bd = %s',
+                [new_rk_list, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'РК {rk_id} успешно добавлен к аккаунту'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить список РК'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при добавлении РК: {e}')
         return JsonResponse({
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
