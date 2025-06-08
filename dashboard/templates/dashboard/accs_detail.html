@@ -32,7 +32,7 @@
                                         <button class="btn btn-outline-success" onclick="openAddRkModal()">
                                             <i class="fas fa-plus"></i> Добавить РК к аккаунту
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-danger" onclick="openDeleteRkModal()">
                                             <i class="fas fa-trash"></i> Удалить РК с аккаунта
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -407,6 +407,28 @@
     </div>
 </div>
 
+<!-- Модальное окно для удаления РК -->
+<div class="modal fade" id="deleteRkModal" tabindex="-1" aria-labelledby="deleteRkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteRkModalLabel">Удалить РК с аккаунта</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="deleteRkContent">
+                    <!-- Содержимое будет добавлено динамически -->
+                </div>
+                <div class="alert alert-danger d-none" id="deleteRkError"></div>
+                <div class="alert alert-success d-none" id="deleteRkSuccess"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function openProxyIdModal() {
     document.getElementById('proxyIdInput').value = '{{ account.proxy_id|default:"" }}';
@@ -530,6 +552,108 @@ function showAddRkSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('addRkError').classList.add('d-none');
+}
+
+function openDeleteRkModal() {
+    const rkList = {{ account.rk_list|default:"null"|safe }};
+    const deleteRkContent = document.getElementById('deleteRkContent');
+    
+    document.getElementById('deleteRkError').classList.add('d-none');
+    document.getElementById('deleteRkSuccess').classList.add('d-none');
+    
+    if (!rkList || rkList.length === 0) {
+        deleteRkContent.innerHTML = '<p class="text-muted">Нет РК для удаления</p>';
+    } else {
+        let html = '<h6>Выберите РК для удаления:</h6>';
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-sm">';
+        html += '<thead><tr><th>РК ID</th><th>Статус</th><th>Действие</th></tr></thead>';
+        html += '<tbody>';
+        
+        rkList.forEach((rk, index) => {
+            const statusClass = getStatusClass(rk[1]);
+            html += `<tr>
+                <td>${rk[0]}</td>
+                <td><span class="badge ${statusClass}">${rk[1]}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRkFromAccount('${rk[0]}', ${index})">
+                        <i class="fas fa-trash"></i> Удалить
+                    </button>
+                </td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+        deleteRkContent.innerHTML = html;
+    }
+    
+    var modal = new bootstrap.Modal(document.getElementById('deleteRkModal'));
+    modal.show();
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'ACTIVE': return 'bg-success';
+        case 'PendingUnban': return 'bg-warning';
+        case 'BAN': return 'bg-danger';
+        case 'MOD': return 'bg-warning';
+        case 'PAUSE': return 'bg-secondary';
+        case 'NEW': return 'bg-info';
+        case 'READY': return 'bg-success';
+        case 'WarmUp': return 'bg-primary';
+        default: return 'bg-secondary';
+    }
+}
+
+function deleteRkFromAccount(rkId, index) {
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    if (!confirm(`Вы уверены, что хотите удалить РК ${rkId}?`)) {
+        return;
+    }
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/delete-rk/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'rk_id': rkId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showDeleteRkSuccess('РК успешно удален с аккаунта!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showDeleteRkError(data.error || 'Произошла ошибка при удалении РК.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showDeleteRkError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showDeleteRkError(message) {
+    const errorEl = document.getElementById('deleteRkError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('deleteRkSuccess').classList.add('d-none');
+}
+
+function showDeleteRkSuccess(message) {
+    const successEl = document.getElementById('deleteRkSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('deleteRkError').classList.add('d-none');
 }
 
 function getCookie(name) {

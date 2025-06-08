@@ -1294,3 +1294,101 @@ def add_rk_to_account(request):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+def delete_rk_from_account(request):
+    """Удаляет РК ID из списка rk_list для аккаунта в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        rk_id = data.get('rk_id')
+        
+        # Валидация входных данных
+        if not account_id or not rk_id:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта или РК ID'
+            })
+        
+        rk_id = str(rk_id).strip()
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта и получаем текущий rk_list
+            cursor.execute(
+                'SELECT id_acc_bd, rk_list FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            row = cursor.fetchone()
+            if not row:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            current_rk_list = row[1]  # Получаем текущий rk_list
+            
+            # Проверяем, что rk_list не пустой
+            if not current_rk_list:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Список РК пуст'
+                })
+            
+            # Ищем РК в списке и удаляем его
+            new_rk_list = []
+            rk_found = False
+            
+            for rk in current_rk_list:
+                if len(rk) > 0 and str(rk[0]) == rk_id:
+                    rk_found = True
+                    # Пропускаем этот РК (не добавляем в новый список)
+                    continue
+                else:
+                    new_rk_list.append(rk)
+            
+            if not rk_found:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'РК не найден в списке аккаунта'
+                })
+            
+            # Если список стал пустым, устанавливаем None
+            if len(new_rk_list) == 0:
+                final_rk_list = None
+            else:
+                final_rk_list = new_rk_list
+            
+            # Обновляем rk_list в базе данных
+            cursor.execute(
+                'UPDATE accs_data SET rk_list = %s WHERE id_acc_bd = %s',
+                [final_rk_list, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'РК {rk_id} успешно удален с аккаунта'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить список РК'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при удалении РК: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
