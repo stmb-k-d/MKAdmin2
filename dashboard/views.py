@@ -1604,3 +1604,73 @@ def update_fbt_acc_id(request):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+def update_dop_comment(request):
+    """Обновляет дополнительный комментарий аккаунта в таблице accs_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Парсим JSON данные из тела запроса
+        data = json.loads(request.body)
+        account_id = data.get('account_id')
+        new_comment = data.get('dop_comment', '')
+        
+        # Валидация входных данных
+        if not account_id:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ID аккаунта'
+            })
+        
+        # Обрезаем пробелы и ограничиваем длину комментария
+        new_comment = new_comment.strip()
+        if len(new_comment) > 1000:  # Ограничение в 1000 символов
+            return JsonResponse({
+                'success': False,
+                'error': 'Комментарий слишком длинный (максимум 1000 символов)'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование аккаунта
+            cursor.execute(
+                'SELECT id_acc_bd FROM accs_data WHERE id_acc_bd = %s',
+                [account_id]
+            )
+            
+            if not cursor.fetchone():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт не найден'
+                })
+            
+            # Обновляем дополнительный комментарий аккаунта
+            cursor.execute(
+                'UPDATE accs_data SET dop_comment = %s WHERE id_acc_bd = %s',
+                [new_comment, account_id]
+            )
+            
+            if cursor.rowcount > 0:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Дополнительный комментарий успешно обновлен'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить комментарий'
+                })
+                
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Некорректные данные JSON'
+        })
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении дополнительного комментария: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })

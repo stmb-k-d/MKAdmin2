@@ -18,6 +18,7 @@ urlpatterns = [
     path('accs/update-status/', views.update_account_status, name='update_account_status'),
     path('accs/update-token/', views.update_account_token, name='update_account_token'),
     path('accs/update-fbt-acc-id/', views.update_fbt_acc_id, name='update_fbt_acc_id'),
+    path('accs/update-dop-comment/', views.update_dop_comment, name='update_dop_comment'),
     path('rk/', views.rk_view, name='rk'),
     path('rk/<int:rk_id>/', views.rk_detail, name='rk_detail'),
     path('campaigns/', views.campaigns, name='campaigns'),

@@ -123,7 +123,7 @@
                                         <button class="btn btn-outline-primary" disabled>
                                             <i class="fas fa-chart-line"></i> Изменить вертикаль аккаунта
                                         </button>
-                                        <button class="btn btn-outline-primary" disabled>
+                                        <button class="btn btn-outline-primary" onclick="openDopCommentModal()">
                                             <i class="fas fa-comment"></i> Изменить дополнительный комментарий
                                         </button>
                                         <button class="btn btn-outline-primary" disabled>
@@ -544,6 +544,33 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" onclick="updateAccountStatus()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для изменения дополнительного комментария -->
+<div class="modal fade" id="dopCommentModal" tabindex="-1" aria-labelledby="dopCommentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dopCommentModalLabel">Изменить дополнительный комментарий</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dopCommentForm">
+                    <div class="mb-3">
+                        <label for="dopCommentInput" class="form-label">Введите новый комментарий:</label>
+                        <textarea class="form-control" id="dopCommentInput" name="dop_comment" rows="4" placeholder="Введите дополнительный комментарий к аккаунту"></textarea>
+                        <div class="form-text">Дополнительные заметки или комментарии к данному аккаунту</div>
+                    </div>
+                    <div class="alert alert-danger d-none" id="dopCommentError"></div>
+                    <div class="alert alert-success d-none" id="dopCommentSuccess"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="updateDopComment()">Сохранить</button>
             </div>
         </div>
     </div>
@@ -985,6 +1012,63 @@ function showFbtAccIdSuccess(message) {
     successEl.textContent = message;
     successEl.classList.remove('d-none');
     document.getElementById('fbtAccIdError').classList.add('d-none');
+}
+
+function openDopCommentModal() {
+    document.getElementById('dopCommentInput').value = '{{ account.dop_comment|default:""|escapejs }}';
+    document.getElementById('dopCommentError').classList.add('d-none');
+    document.getElementById('dopCommentSuccess').classList.add('d-none');
+    var modal = new bootstrap.Modal(document.getElementById('dopCommentModal'));
+    modal.show();
+}
+
+function updateDopComment() {
+    const dopCommentInput = document.getElementById('dopCommentInput');
+    const newComment = dopCommentInput.value.trim();
+    const accountId = {{ account.id_acc_bd|default:"0" }};
+    
+    // Отправляем AJAX запрос
+    fetch('/accs/update-dop-comment/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            'account_id': accountId,
+            'dop_comment': newComment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showDopCommentSuccess('Дополнительный комментарий успешно обновлен!');
+            // Обновляем страницу через 1.5 секунды
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showDopCommentError(data.error || 'Произошла ошибка при обновлении комментария.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showDopCommentError('Произошла ошибка при отправке запроса.');
+    });
+}
+
+function showDopCommentError(message) {
+    const errorEl = document.getElementById('dopCommentError');
+    errorEl.textContent = message;
+    errorEl.classList.remove('d-none');
+    document.getElementById('dopCommentSuccess').classList.add('d-none');
+}
+
+function showDopCommentSuccess(message) {
+    const successEl = document.getElementById('dopCommentSuccess');
+    successEl.textContent = message;
+    successEl.classList.remove('d-none');
+    document.getElementById('dopCommentError').classList.add('d-none');
 }
 
 function getCookie(name) {
