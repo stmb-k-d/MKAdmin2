@@ -32,6 +32,7 @@ urlpatterns = [
     path('rk/update-comment/<int:rk_id>/', views.update_rk_comment, name='update_rk_comment'),
     path('rk/update-pixel-id/<int:rk_id>/', views.update_pixel_id, name='update_pixel_id'),
     path('rk/update-pixel-token/<int:rk_id>/', views.update_pixel_token, name='update_pixel_token'),
+    path('rk/update-acc-id/<int:rk_id>/', views.update_acc_id, name='update_acc_id'),
     path('campaigns/', views.campaigns, name='campaigns'),
     path('adsets/', views.adsets, name='adsets'),
     path('ads/', views.ads, name='ads'),

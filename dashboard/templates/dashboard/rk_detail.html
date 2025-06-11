@@ -321,6 +321,7 @@
                                 <button class="list-group-item list-group-item-action small" disabled>Обновить KT Campaign ID</button>
                                 <button class="list-group-item list-group-item-action small" id="updatePixelIdBtn" data-bs-toggle="modal" data-bs-target="#updatePixelIdModal">Обновить PIXEL ID</button>
                                 <button class="list-group-item list-group-item-action small" id="updatePixelTokenBtn" data-bs-toggle="modal" data-bs-target="#updatePixelTokenModal">Обновить Pixel Token</button>
+                                <button class="list-group-item list-group-item-action small" id="updateAccIdBtn" data-bs-toggle="modal" data-bs-target="#updateAccIdModal">Обновить ACC ID</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Загрузить конверсии в Pixel</button>
                                 <button class="list-group-item list-group-item-action small" disabled>Добавить карту вручную</button>
                                 <button class="list-group-item list-group-item-action small" id="updateCommentBtn" data-bs-toggle="modal" data-bs-target="#updateCommentModal">Обновить комментарий</button>
@@ -479,6 +480,36 @@
     </div>
 </div>
 
+<!-- Модальное окно для обновления ACC ID РК -->
+<div class="modal fade" id="updateAccIdModal" tabindex="-1" aria-labelledby="updateAccIdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateAccIdModalLabel">Обновить ACC ID</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Текущий ACC ID:</strong> 
+                    <span class="text-muted">{{ rk.id_acc_bd|default:"(не указан)" }}</span>
+                </div>
+                <form id="updateAccIdForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newAccId" class="form-label">Новый ACC ID:</label>
+                        <input type="number" class="form-control" id="newAccId" name="new_acc_id" placeholder="Введите новый ACC ID..." value="{{ rk.id_acc_bd|default:"" }}" required>
+                        <div class="form-text">Только целые числа</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmAccIdUpdate">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const confirmBtn = document.getElementById('confirmStatusChange');
@@ -622,6 +653,52 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             alert('Ошибка при обновлении Pixel Token');
+        });
+    });
+    
+    // Обработчик для обновления ACC ID
+    const confirmAccIdBtn = document.getElementById('confirmAccIdUpdate');
+    const accIdInput = document.getElementById('newAccId');
+    
+    confirmAccIdBtn.addEventListener('click', function() {
+        const newAccId = accIdInput.value.trim();
+        
+        if (!newAccId) {
+            alert('Пожалуйста, введите ACC ID');
+            return;
+        }
+        
+        // Проверяем, что введенное значение - это целое число
+        if (!/^\d+$/.test(newAccId)) {
+            alert('ACC ID должен быть целым числом');
+            return;
+        }
+        
+        // Отправляем Ajax запрос для обновления ACC ID
+        fetch("{% url 'dashboard:update_acc_id' rk.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'new_acc_id=' + encodeURIComponent(newAccId)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updateAccIdModal'));
+                modal.hide();
+                
+                // Перезагружаем страницу для отображения нового ACC ID
+                location.reload();
+            } else {
+                alert('Ошибка при обновлении ACC ID: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при обновлении ACC ID');
         });
     });
 });

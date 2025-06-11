@@ -2337,3 +2337,72 @@ def update_pixel_token(request, rk_id):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+
+@csrf_exempt
+def update_acc_id(request, rk_id):
+    """Обновляет ACC ID рекламного кабинета в таблице rk_data"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        # Получаем новый ACC ID из POST данных
+        new_acc_id = request.POST.get('new_acc_id')
+        
+        # Валидация входных данных
+        if not new_acc_id:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Не указан ACC ID'
+            })
+        
+        new_acc_id = new_acc_id.strip()
+        
+        # Проверяем, что введенное значение - это целое число
+        try:
+            new_acc_id = int(new_acc_id)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'ACC ID должен быть целым числом'
+            })
+        
+        # Работаем с базой данных
+        with connection.cursor() as cursor:
+            # Сначала проверяем существование РК
+            cursor.execute(
+                'SELECT id, rk_id FROM rk_data WHERE id = %s',
+                [rk_id]
+            )
+            
+            rk_data = cursor.fetchone()
+            if not rk_data:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Рекламный кабинет не найден'
+                })
+            
+            # Обновляем ACC ID РК
+            cursor.execute(
+                'UPDATE rk_data SET id_acc_bd = %s WHERE id = %s',
+                [new_acc_id, rk_id]
+            )
+            
+            if cursor.rowcount > 0:
+                logger.info(f'ACC ID РК id={rk_id} (rk_id={rk_data[1]}) обновлен на: {new_acc_id}')
+                return JsonResponse({
+                    'success': True,
+                    'message': f'ACC ID успешно обновлен на {new_acc_id}'
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось обновить ACC ID'
+                })
+                
+    except Exception as e:
+        logger.exception(f'Ошибка при обновлении ACC ID РК id={rk_id}: {e}')
+        return JsonResponse({
+            'success': False,
+            'error': f'Произошла ошибка: {str(e)}'
+        })
