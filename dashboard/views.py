@@ -465,6 +465,34 @@ def ad_detail(request, ad_id):
         
         daily_columns = [col[0] for col in cursor.description]
         daily_stats = [dict(zip(daily_columns, row)) for row in cursor.fetchall()]
+        
+        # Получаем логи для этого объявления из таблицы working_log
+        ad_logs = []
+        try:
+            # Проверяем существование таблицы working_log
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'working_log'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
+            
+            if table_exists:
+                # Получаем логи где в msg упоминается ad_id
+                cursor.execute('''
+                    SELECT datetime, msg, msg_decription, categorie, type, sub_user, notification
+                    FROM working_log 
+                    WHERE msg ILIKE %s 
+                    ORDER BY datetime DESC 
+                    LIMIT 100
+                ''', [f'%{ad_id}%'])
+                
+                log_columns = [col[0] for col in cursor.description]
+                ad_logs = [dict(zip(log_columns, row)) for row in cursor.fetchall()]
+        except Exception as e:
+            # Если ошибка с таблицей логов, продолжаем без логов
+            logger.error(f"Ошибка при получении логов для объявления {ad_id}: {str(e)}")
     
     return render(request, 'dashboard/ad_detail.html', {
         'menu_items': get_menu_items(),
@@ -472,6 +500,7 @@ def ad_detail(request, ad_id):
         'page_title': f'Объявление: {ad_id}',
         'ad': ad,
         'daily_stats': daily_stats,
+        'ad_logs': ad_logs,
         'back_url': back_url,
         'back_text': back_text
     })
