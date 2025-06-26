@@ -1,0 +1,481 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Статистика по времени депозитов/ребиллов{% endblock %}
+
+{% block page_title %}Статистика по времени депозитов/ребиллов{% endblock %}
+
+{% block extra_head %}
+<style>
+    .upload-block {
+        padding: 20px;
+        border: 2px dashed #ddd;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 25px;
+        background-color: #f9f9f9;
+    }
+    
+    .upload-block:hover {
+        border-color: #007bff;
+    }
+    
+    .table-block {
+        margin-bottom: 25px;
+    }
+    
+    .stats-block {
+        padding: 20px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    
+    .stats-table td {
+        text-align: center;
+    }
+    
+    .stats-table th {
+        text-align: center;
+        background-color: #f5f5f5;
+    }
+    
+    .loading {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .stats-card {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stats-card-header {
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+        font-weight: bold;
+    }
+    
+    .stats-card-body {
+        padding: 15px;
+    }
+    
+    .success-rate {
+        font-weight: bold;
+        color: #28a745;
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<!-- Подгружаем jQuery раньше, чтобы скрипт на странице работал до глобального подключения в base.html -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- Добавляем PapaParse -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Блок 1: Загрузка файла -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Загрузка данных</h5>
+                    <div>
+                        <a href="{% url 'dashboard:lp' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Назад к LP
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="upload-block">
+                        <h5 class="mb-3">Загрузите CSV-файл с данными по конверсиям</h5>
+                        <p class="mb-3 text-muted">Поддерживаются только файлы формата .csv с колонками: Статус, Время конверсии, Время продажи, Sub ID 14, Sub ID 15</p>
+                        <div class="custom-file mb-3">
+                            <input type="file" class="form-control" id="csvFileInput" accept=".csv">
+                        </div>
+                        <button type="button" class="btn btn-info" id="testBtn">Тест функций</button>
+                    </div>
+                    <div id="loading" class="loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2">Обработка данных...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Блок 2: Время депозитов и ребиллов -->
+            <div class="card mb-4 stats-block" id="timeStatsCard" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Время депозитов и ребиллов</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover stats-table" id="timeStatsTable">
+                            <thead>
+                                <tr>
+                                    <th>Час</th>
+                                    <th>Регистрации</th>
+                                    <th>CR R2D (%)</th>
+                                    <th>Депозиты</th>
+                                    <th>Ребиллы</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timeStatsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Блок 3: Депозитная активность в зависимости от времени FTD -->
+            <div class="card mb-4 stats-block" id="ftdStatsCard" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Депозитная активность в зависимости от времени FTD</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover stats-table" id="ftdStatsTable">
+                            <thead>
+                                <tr>
+                                    <th>Час</th>
+                                    <th>Регистрации</th>
+                                    <th>Депозиты</th>
+                                    <th>Ребиллы</th>
+                                    <th>AVG FTD Amount</th>
+                                    <th>AVG Quant Rebill per User</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ftdStatsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    let csvData = [];
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            alert('Файл не выбран');
+            return;
+        }
+        if (!file.name.endsWith('.csv')) {
+            alert('Пожалуйста, выберите файл формата .csv');
+            return;
+        }
+        $('#loading').show();
+
+        // Читаем файл и сразу парсим через PapaParse
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const csvText = e.target.result;
+                Papa.parse(csvText, {
+                    delimiter: ';',
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        processCsvResults(results.data);
+                        $('#loading').hide();
+                    },
+                    error: function(err) {
+                        console.error('PapaParse error:', err);
+                        alert('Ошибка при разборе CSV: ' + err.message);
+                        $('#loading').hide();
+                    }
+                });
+            } catch (err) {
+                console.error('Общая ошибка при обработке файла:', err);
+                alert('Ошибка при обработке файла: ' + err.message);
+                $('#loading').hide();
+            }
+        };
+        reader.onerror = function(e) {
+            console.error('File reading error:', e);
+            alert('Ошибка чтения файла');
+            $('#loading').hide();
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    // Новая функция обработки результата PapaParse
+    function processCsvResults(rows) {
+        if (!rows || rows.length === 0) {
+            alert('Файл не содержит данных');
+            return;
+        }
+
+        // Определяем ключи интересующих колонок (ищем по подстроке в нижнем регистре)
+        const sampleKeys = Object.keys(rows[0]).map(k => k.trim());
+        const findKey = substr => sampleKeys.find(k => k.toLowerCase().includes(substr));
+
+        const statusKey = findKey('статус');
+        const conversionTimeKey = findKey('время конверсии');
+        const saleTimeKey = findKey('время продажи');
+        const userIdKey = findKey('sub id 14');
+        const amountKey = findKey('sub id 15');
+
+        if (!statusKey || !conversionTimeKey || !saleTimeKey) {
+            alert('Не удалось найти необходимые колонки. Проверьте формат файла.');
+            return;
+        }
+
+        csvData = [];
+        rows.forEach(r => {
+            const amountStr = (r[amountKey] || '').toString().replace(',', '.');
+            const amountNum = amountStr ? parseFloat(amountStr) : null; // null если пусто
+            csvData.push({
+                status: (r[statusKey] || '').trim().toLowerCase(),
+                conversionTime: (r[conversionTimeKey] || '').trim(),
+                saleTime: (r[saleTimeKey] || '').trim(),
+                userId: (r[userIdKey] || '').toString().trim(),
+                amount: isNaN(amountNum) ? null : amountNum
+            });
+        });
+
+        $('#timeStatsCard, #ftdStatsCard').hide();
+        generateTimeStats();
+        generateFTDStats();
+        $('#timeStatsCard, #ftdStatsCard').show();
+    }
+
+    function parseDateTime(dateTimeStr) {
+        if (!dateTimeStr) return null;
+        
+        // Пробуем разные форматы даты
+        let date = new Date(dateTimeStr);
+        
+        if (isNaN(date.getTime())) {
+            // Если не получилось, пробуем другой формат
+            const parts = dateTimeStr.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+            if (parts) {
+                date = new Date(parts[1], parts[2] - 1, parts[3], parts[4], parts[5], parts[6]);
+            }
+        }
+        
+        return isNaN(date.getTime()) ? null : date;
+    }
+
+    function generateTimeStats() {
+        console.log('Generating time statistics...');
+        $('#timeStatsTableBody').empty();
+        
+        // Создаем объект для хранения статистики по часам
+        const hourStats = {};
+        
+        // Инициализируем все часы
+        for (let hour = 0; hour < 24; hour++) {
+            const hourStr = hour.toString().padStart(2, '0') + ':00';
+            hourStats[hourStr] = {
+                leads: 0,
+                sales: 0,
+                rebills: 0
+            };
+        }
+        
+        let processedLeads = 0;
+        let processedSales = 0;
+        let processedRebills = 0;
+        
+        // Обрабатываем данные
+        csvData.forEach((row, index) => {
+            if (row.status.toLowerCase() === 'lead' && row.conversionTime) {
+                const date = parseDateTime(row.conversionTime);
+                if (date) {
+                    const hour = date.getHours().toString().padStart(2, '0') + ':00';
+                    if (hourStats[hour]) {
+                        hourStats[hour].leads++;
+                        processedLeads++;
+                    }
+                } else if (index < 5) {
+                    console.log('Failed to parse lead date:', row.conversionTime);
+                }
+            } else if (row.status.toLowerCase() === 'sale' && row.saleTime) {
+                const date = parseDateTime(row.saleTime);
+                if (date) {
+                    const hour = date.getHours().toString().padStart(2, '0') + ':00';
+                    if (hourStats[hour]) {
+                        hourStats[hour].sales++;
+                        processedSales++;
+                    }
+                } else if (index < 5) {
+                    console.log('Failed to parse sale date:', row.saleTime);
+                }
+            } else if (row.status.toLowerCase() === 'rebill' && row.saleTime) {
+                const date = parseDateTime(row.saleTime);
+                if (date) {
+                    const hour = date.getHours().toString().padStart(2, '0') + ':00';
+                    if (hourStats[hour]) {
+                        hourStats[hour].rebills++;
+                        processedRebills++;
+                    }
+                } else if (index < 5) {
+                    console.log('Failed to parse rebill date:', row.saleTime);
+                }
+            }
+        });
+        
+        console.log('Time stats processed:', {processedLeads, processedSales, processedRebills});
+        
+        let totalRows = 0;
+        
+        // Выводим статистику в таблицу
+        Object.keys(hourStats).sort().forEach(hour => {
+            const stats = hourStats[hour];
+            const crR2D = stats.leads > 0 ? ((stats.sales / stats.leads) * 100).toFixed(2) : '0.00';
+            
+            $('#timeStatsTableBody').append(`
+                <tr>
+                    <td>${hour}</td>
+                    <td>${stats.leads}</td>
+                    <td>${crR2D}%</td>
+                    <td>${stats.sales}</td>
+                    <td>${stats.rebills}</td>
+                </tr>
+            `);
+            totalRows++;
+        });
+        
+        console.log('Time stats table rows added:', totalRows);
+    }
+
+    function generateFTDStats() {
+        $('#ftdStatsTableBody').empty();
+        
+        // Создаем объект для хранения статистики по часам
+        const hourStats = {};
+        
+        // Инициализируем все часы
+        for (let hour = 0; hour < 24; hour++) {
+            const hourStr = hour.toString().padStart(2, '0') + ':00';
+            hourStats[hourStr] = {
+                leads: 0,
+                sales: 0,
+                userDepositHours: {}, // userId -> час депозита
+                userRebills: {}, // userId -> количество ребиллов
+                userAmounts: [], // суммы депозитов в этот час
+                rebillsForHourDeposits: 0 // ребиллы пользователей, которые сделали депозит в этот час
+            };
+        }
+        
+        // Первый проход - собираем депозиты и регистрации
+        csvData.forEach(row => {
+            if (row.status.toLowerCase() === 'lead' && row.conversionTime) {
+                const date = parseDateTime(row.conversionTime);
+                if (date) {
+                    const hour = date.getHours().toString().padStart(2, '0') + ':00';
+                    if (hourStats[hour]) {
+                        hourStats[hour].leads++;
+                    }
+                }
+            } else if (row.status.toLowerCase() === 'sale' && row.saleTime && row.userId) {
+                const date = parseDateTime(row.saleTime);
+                if (date) {
+                    const hour = date.getHours().toString().padStart(2, '0') + ':00';
+                    if (hourStats[hour]) {
+                        hourStats[hour].sales++;
+                        hourStats[hour].userDepositHours[row.userId] = hour;
+                        if (row.amount !== null) {
+                            hourStats[hour].userAmounts.push(row.amount);
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Второй проход - считаем ребиллы для пользователей, которые сделали депозит в каждый час
+        csvData.forEach(row => {
+            if (row.status.toLowerCase() === 'rebill' && row.userId) {
+                // Находим в каком часу этот пользователь сделал депозит
+                for (const [hour, stats] of Object.entries(hourStats)) {
+                    if (stats.userDepositHours[row.userId]) {
+                        if (!stats.userRebills[row.userId]) {
+                            stats.userRebills[row.userId] = 0;
+                        }
+                        stats.userRebills[row.userId]++;
+                        stats.rebillsForHourDeposits++;
+                        break;
+                    }
+                }
+            }
+        });
+        
+        // Выводим статистику в таблицу
+        Object.keys(hourStats).sort().forEach(hour => {
+            const stats = hourStats[hour];
+            
+            // Средняя сумма депозитов
+            const validAmounts = stats.userAmounts.filter(a => a !== null);
+            const avgAmount = validAmounts.length > 0 
+                ? (validAmounts.reduce((sum, a) => sum + a, 0) / validAmounts.length).toFixed(2)
+                : '0.00';
+            
+            // Среднее количество ребиллов на пользователя
+            const uniqueUsers = Object.keys(stats.userDepositHours).length;
+            const avgRebillsPerUser = uniqueUsers > 0 
+                ? (stats.rebillsForHourDeposits / uniqueUsers).toFixed(2)
+                : '0.00';
+            
+            $('#ftdStatsTableBody').append(`
+                <tr>
+                    <td>${hour}</td>
+                    <td>${stats.leads}</td>
+                    <td>${stats.sales}</td>
+                    <td>${stats.rebillsForHourDeposits}</td>
+                    <td>$${avgAmount}</td>
+                    <td>${avgRebillsPerUser}</td>
+                </tr>
+            `);
+        });
+    }
+
+    // Тестовая функция
+    function runDiagnostics() {
+        console.log('=== DIAGNOSTIC TEST ===');
+        console.log('jQuery loaded:', typeof $ !== 'undefined');
+        console.log('Elements found:');
+        console.log('  #csvFileInput:', $('#csvFileInput').length);
+        console.log('  #loading:', $('#loading').length);
+        console.log('  #timeStatsCard:', $('#timeStatsCard').length);
+        console.log('  #ftdStatsCard:', $('#ftdStatsCard').length);
+        console.log('  #timeStatsTableBody:', $('#timeStatsTableBody').length);
+        console.log('  #ftdStatsTableBody:', $('#ftdStatsTableBody').length);
+        
+        // Тестовые данные
+        const testData = `"ID конверсии";Subid;Кампания;"Sub ID 3";"Sub ID 4";"Sub ID 5";"Время конверсии";"Время продажи";Статус;"Ориг. статус";ОС;Город;Страна;"Sub ID 6";"Sub ID 14";"Sub ID 15"
+ test1;user1;campaign1;1;2;3;"2025-06-12 08:15:30";;lead;lead;iOS;London;UK;;user001;
+ test2;user1;campaign1;1;2;3;;"2025-06-12 08:30:45";sale;sale;iOS;London;UK;;user001;50.00`;
+        
+        console.log('Testing with sample data...');
+        Papa.parse(testData, {
+            delimiter: ';',
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                processCsvResults(results.data);
+            }
+        });
+        
+        console.log('=== END DIAGNOSTIC ===');
+    }
+
+    // Обработчики событий
+    $('#csvFileInput').on('change', handleFileUpload);
+    $('#testBtn').on('click', runDiagnostics);
+});
+</script>
+{% endblock %} 

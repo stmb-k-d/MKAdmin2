@@ -1,0 +1,8 @@
+"ID конверсии";Subid;Кампания;"Sub ID 3";"Sub ID 4";"Sub ID 5";"Время конверсии";"Время продажи";Статус;"Ориг. статус";ОС;Город;Страна;"Sub ID 6";"Sub ID 14";"Sub ID 15"
+test1;user1;campaign1;1;2;3;"2025-06-12 08:15:30";;lead;lead;iOS;London;UK;;user001;
+test2;user2;campaign1;1;2;3;"2025-06-12 09:22:15";;lead;lead;iOS;London;UK;;user002;
+test3;user3;campaign1;1;2;3;"2025-06-12 10:45:20";;lead;lead;iOS;London;UK;;user003;
+test4;user1;campaign1;1;2;3;;"2025-06-12 08:30:45";sale;sale;iOS;London;UK;;user001;50.00
+test5;user3;campaign1;1;2;3;;"2025-06-12 10:55:30";sale;sale;iOS;London;UK;;user003;75.50
+test6;user1;campaign1;1;2;3;;"2025-06-12 09:15:20";rebill;rebill;iOS;London;UK;;user001;25.00
+test7;user3;campaign1;1;2;3;;"2025-06-12 11:30:10";rebill;rebill;iOS;London;UK;;user003;30.00 

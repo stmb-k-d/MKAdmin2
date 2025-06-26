@@ -55,6 +55,7 @@ urlpatterns = [
     path('extra/', views.extra_view, name='extra'),
     path('lp/', views.lp_view, name='lp'),
     path('deposit-stats/', views.deposit_stats_view, name='deposit_stats'),
+    path('time-deposit-stats/', views.time_deposit_stats_view, name='time_deposit_stats'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('working_log/', views.working_log, name='working_log'),
     path('notifications/', views.notifications_view, name='notifications'),

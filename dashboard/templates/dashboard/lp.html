@@ -16,8 +16,13 @@
                     <p class="text-center">Страница будет разработана позже</p>
                     <div class="row mt-4">
                         <div class="col-md-6 mx-auto">
-                            <a href="{% url 'dashboard:deposit_stats' %}" class="btn btn-primary btn-lg w-100">
+                            <a href="{% url 'dashboard:deposit_stats' %}" class="btn btn-primary btn-lg w-100 mb-3">
                                 <i class="fas fa-chart-line me-2"></i>Статистика по попыткам депозитов
+                            </a>
+                        </div>
+                        <div class="col-md-6 mx-auto">
+                            <a href="{% url 'dashboard:time_deposit_stats' %}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-clock me-2"></i>Статистика по времени депозитов\ребиллов
                             </a>
                         </div>
                     </div>

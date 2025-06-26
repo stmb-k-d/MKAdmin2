@@ -931,6 +931,13 @@ def deposit_stats_view(request):
         'page_title': 'Статистика по попыткам депозитов'
     })
 
+def time_deposit_stats_view(request):
+    return render(request, 'dashboard/time_deposit_stats.html', {
+        'menu_items': get_menu_items(),
+        'title': 'Статистика по времени депозитов/ребиллов',
+        'page_title': 'Статистика по времени депозитов/ребиллов'
+    })
+
 def facebook_stats_view(request):
     """
     Отображает данные статистики Facebook из таблицы ad_data_daily
