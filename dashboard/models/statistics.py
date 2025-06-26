@@ -1,5 +1,7 @@
 from django.db import models
 from .rk import Campaign, AdSet, Ad
+from django.contrib.auth import get_user_model
+from django.conf import settings
 
 class CampaignStatistic(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='statistics', verbose_name='Кампания')
@@ -59,4 +61,6 @@ class AdStatistic(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f"{self.ad.name} - {self.date}" 
+        return f"{self.ad.name} - {self.date}"
+
+ 

@@ -63,4 +63,9 @@ urlpatterns = [
     path('team/', views.team_view, name='team'),
     path('api/facebook/stats/data/', views.get_facebook_stats_data, name='facebook_stats_data'),
     path('api/facebook/stats/chart/', views.get_facebook_stats_chart_data, name='facebook_stats_chart'),
+    
+    # API для работы с отчетами
+    path('api/reports/save/', views.save_report, name='save_report'),
+    path('api/reports/load/<str:report_name>/', views.load_report, name='load_report'),
+    path('api/reports/delete/<str:report_name>/', views.delete_report, name='delete_report'),
 ] 

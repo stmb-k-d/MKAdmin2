@@ -292,6 +292,18 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <h5 class="mb-0 me-3">Статистика Facebook</h5>
+            <!-- Управление отчетами -->
+            <div class="reports-controls d-flex align-items-center">
+                <select id="savedReportsSelect" class="form-select form-select-sm me-2" style="width: 200px;">
+                    <option value="">Выберите отчет...</option>
+                    {% for report in saved_reports %}
+                        <option value="{{ report.report_name }}">{{ report.report_name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="saveReportBtn">
+                    <i class="fas fa-save"></i> Сохранить отчет
+                </button>
+            </div>
         </div>
     </div>
     <div class="card-body">
@@ -324,26 +336,30 @@
                         <input class="form-check-input" type="checkbox" id="zeroSpendFilter">
                         <label class="form-check-label" for="zeroSpendFilter">Убрать без расхода</label>
                     </div>
-                    <div class="column-buttons me-3">
+                    <!-- Блок основных кнопок с одинаковыми отступами -->
+                    <div class="d-flex gap-3 align-items-center">
                         <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#columnSelectionModal">
                             <i class="fas fa-columns"></i> Настроить колонки
                         </button>
-                    </div>
-                    <!-- Кнопка фильтров -->
-                    <div class="d-flex gap-2 me-3">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="showFiltersBtn" data-bs-toggle="modal" data-bs-target="#filtersModal">
-                            <i class="fas fa-filter"></i> Фильтры
+                        
+                        <div class="d-flex gap-2 align-items-center">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="showFiltersBtn" data-bs-toggle="modal" data-bs-target="#filtersModal">
+                                <i class="fas fa-filter"></i> Фильтры
+                            </button>
+                            
+                            <button type="button" class="btn btn-outline-danger btn-sm d-none" id="resetFiltersBtn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <button id="refreshTable" class="btn btn-outline-primary btn-sm refresh-btn" title="Обновить таблицу">
+                            <i class="fas fa-sync-alt"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm d-none" id="resetFiltersBtn">
-                            <i class="fas fa-times"></i>
+                        
+                        <button id="downloadCsvBtn" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-download"></i> Скачать CSV
                         </button>
                     </div>
-                    <button id="refreshTable" class="btn btn-outline-primary btn-sm refresh-btn">
-                        <i class="fas fa-sync-alt"></i> Обновить таблицу
-                    </button>
-                    <button id="downloadCsvBtn" class="btn btn-outline-secondary btn-sm ms-2">
-                        <i class="fas fa-download"></i> Скачать CSV
-                    </button>
                 </div>
                 <div>
                     <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск...">
@@ -477,6 +493,29 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="applyFiltersBtn" data-bs-dismiss="modal">Применить фильтры</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для сохранения отчета -->
+<div class="modal fade" id="saveReportModal" tabindex="-1" aria-labelledby="saveReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveReportModalLabel">Сохранить отчет</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="reportNameInput" class="form-label">Название отчета</label>
+                    <input type="text" class="form-control" id="reportNameInput" placeholder="Введите название отчета">
+                </div>
+                <div id="saveReportAlert" class="alert alert-info d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmSaveReport">Сохранить</button>
             </div>
         </div>
     </div>
@@ -1011,9 +1050,20 @@ $(document).ready(function() {
     {% endfor %}
     ];
     
-    // Загружаем все доступные колонки
-    const allColumns = [{% for column in columns %}"{{ column }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
-    console.log("Доступные колонки:", allColumns);
+    // Загружаем все доступные колонки из Django (схема БД)
+    const dbColumns = [{% for column in columns %}"{{ column }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    // Получаем дополнительные колонки из первой строки данных (для производительности)
+    let dataColumns = [];
+    if (statsData.length > 0) {
+        dataColumns = Object.keys(statsData[0]);
+    }
+    
+    // Объединяем колонки из БД и дополнительные из данных
+    const allColumns = [...new Set([...dbColumns, ...dataColumns])];
+    console.log("Колонки из БД:", dbColumns);
+    console.log("Колонки из данных:", dataColumns);
+    console.log("Все доступные колонки:", allColumns);
     
     // Изначально выбранные колонки по умолчанию
     const initialDefaultColumns = allColumns.filter(c => c !== 'date_log').slice(0, 15);
@@ -1049,7 +1099,10 @@ $(document).ready(function() {
     function initUniqueValues() {
         uniqueValues = {};
         allColumns.forEach(c => uniqueValues[c] = new Set());
-        statsData.forEach(row => {
+        
+        // Для производительности используем только первые 1000 строк для определения уникальных значений
+        const sampleData = statsData.slice(0, 1000);
+        sampleData.forEach(row => {
             allColumns.forEach(c => {
                 if (row[c] !== null && row[c] !== undefined) {
                     uniqueValues[c].add(row[c]);
@@ -1118,6 +1171,17 @@ $(document).ready(function() {
     $('#resetFiltersBtn').on('click',function(){ activeFilters={}; $(this).addClass('d-none'); $('.active-filters-indicator').remove(); buildTable(); });
 
     $('#filtersModal').on('show.bs.modal',function(){ $('#filtersContainer').empty(); if(Object.keys(activeFilters).length){ for(const [c,v] of Object.entries(activeFilters)) addFilter(c,v); } else addFilter(); });
+
+    // Обработчик для модального окна выбора колонок - обновляем состояние чекбоксов при каждом открытии
+    $('#columnSelectionModal').on('show.bs.modal', function() {
+        // Синхронизируем selectedColumns с реально отображаемыми колонками в таблице
+        const tableHeaders = document.querySelectorAll('#statsTable thead th');
+        if (tableHeaders.length > 0) {
+            selectedColumns = Array.from(tableHeaders).map(th => th.textContent.trim());
+            console.log('Синхронизированы колонки с таблицей:', selectedColumns);
+        }
+        buildColumnSelectionModal();
+    });
 
     // --------- конец фильтров ----------
 
@@ -1476,8 +1540,11 @@ $(document).ready(function() {
         const columnCheckboxes = document.getElementById('columnCheckboxes');
         columnCheckboxes.innerHTML = '';
         
+        // Используем selectedColumns как основу для порядка, затем добавляем недостающие из allColumns
+        const availableColumns = [...selectedColumns, ...allColumns.filter(col => !selectedColumns.includes(col))];
+        
         // Создаем чекбоксы для каждой колонки
-        allColumns.forEach(column => {
+        availableColumns.forEach(column => {
             const checkboxContainer = document.createElement('div');
             checkboxContainer.className = 'column-checkbox-container';
             checkboxContainer.dataset.column = column;
@@ -1874,9 +1941,6 @@ $(document).ready(function() {
         }
     }
     
-    // Инициализация (строим модальное окно колонок без построения таблицы)
-    buildColumnSelectionModal();
-
     // ------------------ Логика агрегации при скрытом date_log ------------------
     const nameColumns = ['id_acc_bd','rk_id','camp_id','adset_id','ad_id','geo_buying','creo_id','app_id','type_optimization','fb_objective','time_zone','kt_campaign_name','kt_campaign_id','comment','rk_limit','creative_thumbnail_url','ad_name','adset_name','camp_name','rk_cur','rk_name','install_or_dep'];
     const statusColumns = ['fb_effective_status','fb_status','install_or_dep','live_status','ad_effective_status','adset_status','adset_effective_status','camp_status','camp_effective_status'];
@@ -2001,6 +2065,25 @@ $(document).ready(function() {
     // Теперь, когда классификация колонок объявлена, строим таблицу и применяем фильтр поиска
     buildTable();
     applySearchFilter(searchInput.value);
+    
+    // Инициализация модального окна колонок ПОСЛЕ построения таблицы
+    // Синхронизируем selectedColumns с реально отображаемыми колонками в таблице
+    const tableHeaders = document.querySelectorAll('#statsTable thead th');
+    if (tableHeaders.length > 0) {
+        selectedColumns = Array.from(tableHeaders).map(th => th.textContent.trim());
+        console.log('Инициализация: синхронизированы колонки с таблицей:', selectedColumns);
+    }
+    // Убеждаемся что allColumns содержит все реальные колонки из данных
+    if (statsData.length > 0) {
+        const dataColumns = Object.keys(statsData[0]);
+        // Объединяем с уже существующими allColumns чтобы не потерять ничего
+        const combinedColumns = [...new Set([...allColumns, ...dataColumns])];
+        if (combinedColumns.length > allColumns.length) {
+            console.log('Обновляем allColumns с дополнительными колонками из данных:', combinedColumns);
+            allColumns.splice(0, allColumns.length, ...combinedColumns);
+        }
+    }
+    buildColumnSelectionModal();
 
     // ---------- Генерация CSV ----------
     function generateCsv() {
@@ -2047,6 +2130,179 @@ $(document).ready(function() {
     }
 
     document.getElementById('downloadCsvBtn').addEventListener('click', generateCsv);
+
+    // ========== ФУНКЦИОНАЛЬНОСТЬ РАБОТЫ С ОТЧЕТАМИ ==========
+    
+    let currentReportName = null;
+    let savedReportsData = {{ saved_reports|safe }};
+    
+    // Обработчик сохранения отчета
+    document.getElementById('saveReportBtn').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('saveReportModal'));
+        const nameInput = document.getElementById('reportNameInput');
+        const alert = document.getElementById('saveReportAlert');
+        
+        // Если мы находимся в загруженном отчете, подставляем его название
+        if (currentReportName) {
+            const currentReport = savedReportsData.find(r => r.report_name === currentReportName);
+            if (currentReport) {
+                nameInput.value = currentReport.report_name;
+                alert.textContent = `Отчет "${currentReport.report_name}" будет обновлен`;
+                alert.className = 'alert alert-warning';
+                alert.classList.remove('d-none');
+            }
+        } else {
+            nameInput.value = '';
+            alert.classList.add('d-none');
+        }
+        
+        modal.show();
+    });
+    
+    // Подтверждение сохранения отчета
+    document.getElementById('confirmSaveReport').addEventListener('click', function() {
+        const reportName = document.getElementById('reportNameInput').value.trim();
+        if (!reportName) {
+            alert('Введите название отчета');
+            return;
+        }
+        
+        // Получаем текущее состояние фильтров
+        const currentFilters = getCurrentFilters();
+        const currentDateRange = getCurrentDateRange();
+        
+        const reportData = {
+            report_name: reportName,
+            columns: selectedColumns,
+            filters: currentFilters,
+            date_range: currentDateRange
+        };
+        
+        // Отправляем на сервер
+        fetch('/api/reports/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(reportData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно
+                bootstrap.Modal.getInstance(document.getElementById('saveReportModal')).hide();
+                
+                // Обновляем список отчетов
+                refreshSavedReportsList(data.report_name);
+                currentReportName = data.report_name;
+                
+                // Показываем уведомление
+                alert(data.message);
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка сохранения: ' + error);
+        });
+    });
+    
+    // Обработчик выбора сохраненного отчета
+    document.getElementById('savedReportsSelect').addEventListener('change', function() {
+        const reportName = this.value;
+        if (!reportName) {
+            currentReportName = null;
+            return;
+        }
+        
+        fetch(`/api/reports/load/${encodeURIComponent(reportName)}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const report = data.report;
+                currentReportName = reportName;
+                
+                // Применяем настройки отчета
+                if (report.columns && report.columns.length > 0) {
+                    selectedColumns = report.columns;
+                    buildColumnSelectionModal();
+                    refreshDataSource();
+                    buildTable();
+                }
+                
+                if (report.date_range) {
+                    applyDateRange(report.date_range);
+                }
+                
+                if (report.filters && report.filters.length > 0) {
+                    applyFilters(report.filters);
+                }
+                
+                alert(`Отчет "${report.name}" загружен`);
+            } else {
+                alert('Ошибка загрузки отчета: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка: ' + error);
+        });
+    });
+    
+    // Вспомогательные функции
+    function getCurrentFilters() {
+        // Получаем текущие фильтры из интерфейса
+        const filters = [];
+        // Здесь нужно реализовать получение состояния фильтров
+        return filters;
+    }
+    
+    function getCurrentDateRange() {
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        if (dateFrom && dateTo) {
+            return `${dateFrom} - ${dateTo}`;
+        } else if (dateFrom) {
+            return dateFrom;
+        } else if (dateTo) {
+            return dateTo;
+        }
+        return '';
+    }
+    
+    function applyDateRange(dateRange) {
+        // Применяем диапазон дат к форме
+        if (dateRange.includes(' - ')) {
+            const [from, to] = dateRange.split(' - ');
+            document.getElementById('dateFrom').value = from.trim();
+            document.getElementById('dateTo').value = to.trim();
+        }
+    }
+    
+    function applyFilters(filters) {
+        // Применяем фильтры к интерфейсу
+        // Здесь нужно реализовать применение фильтров
+    }
+    
+    function refreshSavedReportsList(selectedId = null) {
+        // Обновляем выпадающий список отчетов
+        const select = document.getElementById('savedReportsSelect');
+        
+        // Перезагружаем данные с сервера
+        fetch('/statistic/facebook/')
+        .then(response => response.text())
+        .then(html => {
+            // Извлекаем обновленный список из ответа
+            // Более простой способ - перезагрузить страницу
+            window.location.reload();
+        });
+    }
+    
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
 });
 </script>
 {% endblock %} 

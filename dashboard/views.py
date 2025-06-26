@@ -944,8 +944,17 @@ def facebook_stats_view(request):
     """
     try:
         # Получаем параметры фильтрации по датам из запроса
+        # Если параметры не указаны, используем сегодняшнюю дату по умолчанию
+        from datetime import date
+        today = date.today().strftime('%Y-%m-%d')
+        
         date_from = request.GET.get('date_from', '')
         date_to = request.GET.get('date_to', '')
+        
+        # Устанавливаем дефолтные значения на сегодня, если параметры пустые
+        if not date_from and not date_to:
+            date_from = today
+            date_to = today
         
         # Проверяем существование таблицы
         with connection.cursor() as cursor:
@@ -1011,6 +1020,28 @@ def facebook_stats_view(request):
                         item[col] = row[i]
                 data.append(item)
             
+            # Получаем сохраненные отчеты пользователя
+            saved_reports = []
+            if request.user.is_authenticated:
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            SELECT report_name, reports_structure_list, report_dates, report_filters
+                            FROM users_report_data 
+                            WHERE user_id = %s
+                        """, [request.user.id])
+                        
+                        report_columns = [col[0] for col in cursor.description]
+                        saved_reports = []
+                        for row in cursor.fetchall():
+                            report_dict = {}
+                            for i, col in enumerate(report_columns):
+                                report_dict[col] = row[i]
+                            saved_reports.append(report_dict)
+                except Exception as e:
+                    logger.error(f'Ошибка при получении сохраненных отчетов: {e}')
+                    saved_reports = []
+            
             return render(request, 'dashboard/facebook_stats.html', {
                 'data': data,
                 'columns': columns,
@@ -1018,7 +1049,8 @@ def facebook_stats_view(request):
                 'title': 'Facebook Statistics',
                 'page_title': 'Статистика Facebook',
                 'date_from': date_from,
-                'date_to': date_to
+                'date_to': date_to,
+                'saved_reports': list(saved_reports)
             })
             
     except Exception as e:
@@ -2413,3 +2445,140 @@ def update_acc_id(request, rk_id):
             'success': False,
             'error': f'Произошла ошибка: {str(e)}'
         })
+
+@csrf_exempt
+@login_required
+def save_report(request):
+    """Сохранение отчета пользователя"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        data = json.loads(request.body)
+        report_name = data.get('report_name')
+        
+        if not report_name:
+            return JsonResponse({'success': False, 'error': 'Название отчета обязательно'})
+        
+        # Создаем или обновляем отчет
+        try:
+            with connection.cursor() as cursor:
+                # Проверяем, существует ли отчет
+                cursor.execute("""
+                    SELECT COUNT(*) FROM users_report_data 
+                    WHERE user_id = %s AND report_name = %s
+                """, [request.user.id, report_name])
+                
+                exists = cursor.fetchone()[0] > 0
+                
+                # Подготавливаем данные для PostgreSQL массивов
+                columns_array = data.get('columns', [])
+                filters_array = data.get('filters', [])
+                
+                # Для reports_structure_list - массив строк
+                columns_pg_array = '{' + ','.join([f'"{col}"' for col in columns_array]) + '}'
+                
+                # Для report_filters - массив JSON объектов
+                filters_pg_array = '{' + ','.join([json.dumps(filter_obj).replace('"', '\\"') for filter_obj in filters_array]) + '}'
+                
+                if exists:
+                    # Обновляем существующий отчет
+                    cursor.execute("""
+                        UPDATE users_report_data 
+                        SET reports_structure_list = %s::character varying[], report_filters = %s::json[], report_dates = %s
+                        WHERE user_id = %s AND report_name = %s
+                    """, [
+                        columns_pg_array,
+                        filters_pg_array,
+                        data.get('date_range', ''),
+                        request.user.id,
+                        report_name
+                    ])
+                    action = 'обновлен'
+                else:
+                    # Создаем новый отчет
+                    cursor.execute("""
+                        INSERT INTO users_report_data (user_id, report_name, reports_structure_list, report_filters, report_dates)
+                        VALUES (%s, %s, %s::character varying[], %s::json[], %s)
+                    """, [
+                        request.user.id,
+                        report_name,
+                        columns_pg_array,
+                        filters_pg_array,
+                        data.get('date_range', '')
+                    ])
+                    action = 'создан'
+                
+                return JsonResponse({
+                    'success': True, 
+                    'message': f'Отчет "{report_name}" {action}',
+                    'report_name': report_name
+                })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Ошибка сохранения: {str(e)}'})
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Неверный формат данных'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@csrf_exempt
+@login_required
+def load_report(request, report_name):
+    """Загрузка сохраненного отчета"""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT report_name, reports_structure_list, report_filters, report_dates
+                FROM users_report_data 
+                WHERE user_id = %s AND report_name = %s
+            """, [request.user.id, report_name])
+            
+            row = cursor.fetchone()
+            if not row:
+                return JsonResponse({'success': False, 'error': 'Отчет не найден'})
+            
+            # Парсим PostgreSQL массивы
+            # reports_structure_list - character varying[]
+            reports_structure_list = row[1] if row[1] else []
+            # report_filters - json[]
+            report_filters = row[2] if row[2] else []
+            
+            return JsonResponse({
+                'success': True,
+                'report': {
+                    'name': row[0],
+                    'columns': reports_structure_list,
+                    'filters': report_filters,
+                    'date_range': row[3] or '',
+                }
+            })
+    except Exception as e:
+        logger.error(f'Ошибка загрузки отчета {report_name}: {e}')
+        return JsonResponse({'success': False, 'error': f'Ошибка загрузки: {str(e)}'})
+
+
+@csrf_exempt
+@login_required
+def delete_report(request, report_name):
+    """Удаление сохраненного отчета"""
+    if request.method != 'DELETE':
+        return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM users_report_data 
+                WHERE user_id = %s AND report_name = %s
+            """, [request.user.id, report_name])
+            
+            if cursor.rowcount == 0:
+                return JsonResponse({'success': False, 'error': 'Отчет не найден'})
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'Отчет "{report_name}" удален'
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
